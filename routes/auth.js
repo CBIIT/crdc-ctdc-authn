@@ -6,9 +6,9 @@ const {logout} = require('../controllers/auth-api')
 const {formatVariables, formatMap} = require("../bento-event-logging/const/format-constants");
 const {TokenService} = require("../services/token-service");
 const {AuthenticationService} = require("../services/authenticatation-service");
-const {EventService} = require("../neo4j/event-service");
-const {Neo4jDriver} = require("../neo4j/neo4j");
-const {Neo4jService} = require("../neo4j/neo4j-service");
+// const {EventService} = require("../neo4j/event-service");
+// const {Neo4jDriver} = require("../neo4j/neo4j");
+// const {Neo4jService} = require("../neo4j/neo4j-service");
 const {UserService} = require("../services/user-service");
 
 //services
