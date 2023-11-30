@@ -3,8 +3,7 @@ const client = {
     login: async (code, redirectingURL) => {
         const token = await getDCFToken(code, redirectingURL);
         const user = await dcfUserInfo(token);
-        console.log(user)
-       return {name: user.display_name ? user.display_name: '', lastName: user.display_name ? user.display_name: '', email: user.email, tokens: '', idp: 'dcf'};
+       return {name: user.display_name ? user.display_name: '', lastName: user.display_name ? user.display_name: '', email: user.email, tokens: token, idp: 'dcf'};
     },
 
     authenticated: async (tokens) => {

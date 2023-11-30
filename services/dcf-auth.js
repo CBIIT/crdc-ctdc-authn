@@ -25,7 +25,7 @@ async function getDCFToken(code, redirectURi) {
     });
     const jsonResponse = await response.json();
     validateResponseOrThrow(response);
-    return jsonResponse.access_token;
+    return jsonResponse.token;
 }
 
 async function dcfLogout(tokens) {
