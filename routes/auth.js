@@ -10,13 +10,14 @@ const {EventService} = require("../neo4j/event-service");
 const {Neo4jDriver} = require("../neo4j/neo4j");
 const {Neo4jService} = require("../neo4j/neo4j-service");
 const {UserService} = require("../services/user-service");
+
 //services
-const neo4j = new Neo4jDriver(config.neo4j_uri, config.neo4j_user, config.neo4j_password);
-const neo4jService = new Neo4jService(neo4j);
-const eventService = new EventService(neo4j);
-const userService = new UserService(neo4jService);
-const tokenService = new TokenService(config.token_secret, userService);
-const authService = new AuthenticationService(tokenService, userService);
+// const neo4j = new Neo4jDriver(config.neo4j_uri, config.neo4j_user, config.neo4j_password);
+// const neo4jService = new Neo4jService(neo4j);
+// const eventService = new EventService(neo4j);
+// const userService = new UserService(neo4jService);
+// const tokenService = new TokenService(config.token_secret, userService);
+// const authService = new AuthenticationService(tokenService, userService);
 
 /* Login */
 /* Granting an authenticated token */
@@ -31,7 +32,8 @@ router.post('/login', async function (req, res) {
             lastName: lastName
         };
         req.session.userInfo = formatVariables(req.session.userInfo, ["IDP"], formatMap);
-        await eventService.storeLoginEvent(req.session.userInfo.email, req.session.userInfo.IDP);
+        // we do not need userInfo in neo4j
+        //await eventService.storeLoginEvent(req.session.userInfo.email, req.session.userInfo.IDP);
         req.session.tokens = tokens;
         res.json({name, email, "timeout": config.session_timeout / 1000});
     } catch (e) {
@@ -51,8 +53,9 @@ router.post('/logout', async function (req, res, next) {
     try {
         const idp = config.getIdpOrDefault(req.body['IDP']);
         await idpClient.logout(idp, req.session.tokens);
-        let userInfo = req.session.userInfo;
-        await eventService.storeLogoutEvent(userInfo.email, userInfo.IDP);
+        // we do not need userInfo in neo4j
+        // let userInfo = req.session.userInfo;
+        // await eventService.storeLogoutEvent(userInfo.email, userInfo.IDP);
         // Remove User Session
         return logout(req, res);
     } catch (e) {
@@ -64,14 +67,14 @@ router.post('/logout', async function (req, res, next) {
 /* Authenticated */
 // Return {status: true} or {status: false}
 // Calling this API will refresh the session
-router.post('/authenticated', async function (req, res) {
-    try {
-        const status = await authService.authenticate(req);
-        res.status(200).send({ status });
-    } catch (e) {
-        console.log(e);
-        res.status(500).json({errors: e});
-    }
-});
+// router.post('/authenticated', async function (req, res) {
+//     try {
+//         const status = await authService.authenticate(req);
+//         res.status(200).send({ status });
+//     } catch (e) {
+//         console.log(e);
+//         res.status(500).json({errors: e});
+//     }
+// });
 
 module.exports = router;

@@ -45,15 +45,14 @@ app.get('/api/auth/version', function (req, res, next) {
       version: config.version, date: config.date
   });
 });
-app.use(createSession({ sessionSecret: config.cookie_secret, session_timeout: config.session_timeout }));
 
+app.use(createSession({ sessionSecret: config.cookie_secret, session_timeout: config.session_timeout }));
 
 app.use('/api/auth', authRouter);
 
 if (process.env.NODE_ENV === 'development') {
   console.log("Running in development mode, local test page enabled");
   app.set('view engine', 'ejs');
-
   app.get('/', (req, res) => {
     res.render('index', {
       googleClientID: config.google.CLIENT_ID,
