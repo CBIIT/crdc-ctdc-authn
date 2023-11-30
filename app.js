@@ -48,6 +48,15 @@ app.get('/api/auth/version', function (req, res, next) {
 
 app.use(createSession({ sessionSecret: config.cookie_secret, session_timeout: config.session_timeout }));
 
+
+/* GET version for health checking and version checking. */
+app.post('/api/auth/test', function (req, res, next) {
+  res.json({
+      status: "this is a test"
+  });
+});
+
+
 app.use('/api/auth', authRouter);
 
 if (process.env.NODE_ENV === 'development') {
