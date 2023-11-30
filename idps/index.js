@@ -7,7 +7,7 @@ const {NIH, GOOGLE, LOGIN_GOV, TEST, DCF} = require("../constants/idp-constants"
 
 const oauth2Client = {
     login: async (code, idp, redirectingURL) => {
-        switch (idp) {
+        switch (true) {
           case isCaseInsensitiveEqual(idp, GOOGLE):
             return googleClient.login(code, redirectingURL);
 

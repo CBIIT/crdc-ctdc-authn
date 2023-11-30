@@ -1,8 +1,5 @@
 const nodeFetch = require("node-fetch");
 const config = require("../config");
-const {LOGIN_GOV, NIH} = require("../constants/idp-constants");
-const loginGovRegex = new RegExp(/(?:.){1}(@login.gov){1}\b/i);
-const nihRegex = new RegExp(/(?:.){1}(@nih.gov){1}\b/i);
 
 const validateResponseOrThrow= (res)=> {
     if (res.status != 200) throw new Error("eRA Commons access token failed to create because of invalid access code or unauthorized access");
@@ -51,7 +48,7 @@ async function dcfLogout(tokens) {
 
 
 async function dcfUserInfo(accessToken) {
-    console.log(client.LOGOUT_URL)
+    console.log(client.USERINFO_URL)
     const result = await nodeFetch(client.USERINFO_URL, {
         method: 'GET',
         headers: {
@@ -64,6 +61,6 @@ async function dcfUserInfo(accessToken) {
 
 module.exports = {
     getDCFToken,
-    decLogout,
-    decUserInfo,
+    dcfLogout,
+    dcfUserInfo,
 };
