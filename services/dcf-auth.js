@@ -11,6 +11,7 @@ const validateResponseOrThrow= (res)=> {
 const client = config.DCF;
 
 async function getDCFToken(code, redirectURi) {
+    console.log(client.TOKEN_URL)
     const response = await nodeFetch(client.TOKEN_URL, {
         method: 'POST',
         headers: {
@@ -31,6 +32,9 @@ async function getDCFToken(code, redirectURi) {
 }
 
 async function dcfLogout(tokens) {
+    console.log(client.LOGOUT_URL)
+    console.log(Buffer.from(client.CLIENT_ID + ':' + client.CLIENT_SECRET).toString('base64'))
+
     const result = await nodeFetch(client.LOGOUT_URL, {
         method: 'GET',
         headers: {
@@ -47,6 +51,7 @@ async function dcfLogout(tokens) {
 
 
 async function dcfUserInfo(accessToken) {
+    console.log(client.LOGOUT_URL)
     const result = await nodeFetch(client.USERINFO_URL, {
         method: 'GET',
         headers: {
@@ -58,7 +63,7 @@ async function dcfUserInfo(accessToken) {
 
 
 module.exports = {
-    getNIHToken,
-    nihLogout,
-    nihUserInfo,
+    getDCFToken,
+    decLogout,
+    decUserInfo,
 };

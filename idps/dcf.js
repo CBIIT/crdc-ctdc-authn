@@ -1,13 +1,12 @@
-const {getNIHToken, nihUserInfo, nihLogout, getIDP} = require("../services/nih-auth");
+const {getDCFToken, dcfUserInfo, dcfLogout} = require("../services/dcf-auth");
 const client = {
     login: async (code, redirectingURL) => {
-        const token = await getNIHToken(code, redirectingURL);
-        const user = await nihUserInfo(token);
-        // use a preferred name or email as identity
-        const idp = getIDP(user['preferred_username'] ? user['preferred_username'] : user.email);
-        // Leave as blank if no name exits
-        return {name: user.first_name ? user.first_name: '', lastName: user.last_name ? user.last_name: '', email: user.email, tokens: token, idp: idp};
+        const token = await getDCFToken(code, redirectingURL);
+        const user = await dcfUserInfo(token);
+        return user;
     },
+
+    
     authenticated: async (tokens) => {
         try {
             if (!tokens) {
@@ -15,7 +14,7 @@ const client = {
                 return false
             }
             // If not passing, throw error
-            await nihUserInfo(tokens);
+            await dcfUserInfo(tokens);
             return true;
 
         } catch (e) {
@@ -24,7 +23,7 @@ const client = {
         return false;
     },
     logout: async(tokens) => {
-        return await nihLogout(tokens);
+        return await dcfLogout(tokens);
     }
 }
 
