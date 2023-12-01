@@ -51,6 +51,7 @@ app.use(createSession({ sessionSecret: config.cookie_secret, session_timeout: co
 
 /* GET version for health checking and version checking. */
 app.post('/api/auth/test', function (req, res, next) {
+  console.log('/api/auth/test');
   res.json({
       status: "this is a test"
   });
