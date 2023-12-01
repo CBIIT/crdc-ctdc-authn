@@ -58,7 +58,7 @@ app.post('/api/auth/test', function (req, res, next) {
 
 
 app.use('/api/auth', authRouter);
-
+console.log('api/auth');
 if (process.env.NODE_ENV === 'development') {
   console.log("Running in development mode, local test page enabled");
   app.set('view engine', 'ejs');
