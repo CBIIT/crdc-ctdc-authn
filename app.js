@@ -55,7 +55,7 @@ app.post('/api/auth/test', function (req, res, next) {
   });
 });
 
-//app.use(createSession({ sessionSecret: config.cookie_secret, session_timeout: config.session_timeout }));
+app.use(createSession({ sessionSecret: config.cookie_secret, session_timeout: config.session_timeout }));
 
 app.use('/api/auth', authRouter);
 console.log('api/auth');
