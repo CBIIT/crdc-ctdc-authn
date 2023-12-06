@@ -46,8 +46,6 @@ app.get('/api/auth/version', function (req, res, next) {
   });
 });
 
-app.use(createSession({ sessionSecret: config.cookie_secret, session_timeout: config.session_timeout }));
-
 
 /* GET version for health checking and version checking. */
 app.post('/api/auth/test', function (req, res, next) {
@@ -57,6 +55,7 @@ app.post('/api/auth/test', function (req, res, next) {
   });
 });
 
+//app.use(createSession({ sessionSecret: config.cookie_secret, session_timeout: config.session_timeout }));
 
 app.use('/api/auth', authRouter);
 console.log('api/auth');
