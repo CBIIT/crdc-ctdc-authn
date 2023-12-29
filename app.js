@@ -31,6 +31,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.get('/api/auth/session-ttl', (req, res) => {
+  console.log("ttl")
   getTTL(req, res);
 });
 

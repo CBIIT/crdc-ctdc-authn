@@ -52,6 +52,8 @@ router.post('/login', async function (req, res) {
 /* Logout */
 router.post('/logout', async function (req, res, next) {
     try {
+        console.log("logout")
+         console.log(req.body['IDP'])
         const idp = config.getIdpOrDefault(req.body['IDP']);
         await idpClient.logout(idp, req.session.tokens);
         // we do not need userInfo in neo4j
@@ -67,15 +69,16 @@ router.post('/logout', async function (req, res, next) {
 
 /* Authenticated */
 // Return {status: true} or {status: false}
-// Calling this API will refresh the session
-// router.post('/authenticated', async function (req, res) {
-//     try {
-//         const status = await authService.authenticate(req);
-//         res.status(200).send({ status });
-//     } catch (e) {
-//         console.log(e);
-//         res.status(500).json({errors: e});
-//     }
-// });
+//Calling this API will refresh the session
+router.post('/authenticated', async function (req, res) {
+    try {
+        //const status = await authService.authenticate(req);
+        //res.status(200).send({ status : Boolean(req?.session?.tokens) });
+        res.status(200).send({ status : true });
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({errors: e});
+    }
+});
 
 module.exports = router;
