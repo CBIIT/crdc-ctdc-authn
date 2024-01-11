@@ -9,6 +9,8 @@ const client = config.DCF;
 
 async function getDCFToken(code, redirectURi) {
     console.log(client.TOKEN_URL)
+    console.log(client.CLIENT_ID)
+     console.log(redirectURi)
     const response = await nodeFetch(client.TOKEN_URL, {
         method: 'POST',
         headers: {
@@ -19,13 +21,13 @@ async function getDCFToken(code, redirectURi) {
             redirect_uri: redirectURi,
             grant_type: "authorization_code",
             client_id: client.CLIENT_ID,
-            client_secret: client.CLIENT_SECRET,
-            scope: "openid"
+            scope: "openid%20user"
         })
     });
     const jsonResponse = await response.json();
     validateResponseOrThrow(response);
-    return jsonResponse.token;
+    console.log(jsonResponse)
+    return jsonResponse.access_token;
 }
 
 async function dcfLogout(tokens) {

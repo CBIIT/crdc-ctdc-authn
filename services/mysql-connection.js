@@ -6,6 +6,7 @@ const connection = mysql.createPool({
     user: config.mysql_user,
     password: config.mysql_password,
     database: config.mysql_database,
+    insecureAuth : false
 });
 
 const getTTL = (req, res) => {
