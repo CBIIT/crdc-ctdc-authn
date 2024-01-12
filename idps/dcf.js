@@ -1,8 +1,8 @@
 const {getDCFToken, dcfUserInfo, dcfLogout} = require("../services/dcf-auth");
 const client = {
     login: async (code, redirectingURL) => {
-         console.log("login")
-          console.log(code)
+        console.log("login")
+        console.log(code)
         console.log(redirectingURL)
         const token = await getDCFToken(code, redirectingURL);
         const user = await dcfUserInfo(token);

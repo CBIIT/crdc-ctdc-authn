@@ -14,7 +14,6 @@ const getTTL = (req, res) => {
 
      connection.getConnection(async function (err, currentConnection) {
         const sessionID = getSessionIDFromCookie(req, res);
-        console.log(sessionID)
         if (err) {
             console.log(err);
             res.json({ttl: null, error: "Could not establish a connection to the session database, see logs for details"});

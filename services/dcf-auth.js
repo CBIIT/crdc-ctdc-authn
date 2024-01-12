@@ -8,9 +8,7 @@ const validateResponseOrThrow= (res)=> {
 const client = config.DCF;
 
 async function getDCFToken(code, redirectURi) {
-    console.log(client.TOKEN_URL)
-    console.log(client.CLIENT_ID)
-     console.log(redirectURi)
+    console.log("getDCFToken")
     const response = await nodeFetch(client.TOKEN_URL, {
         method: 'POST',
         headers: {
@@ -26,13 +24,12 @@ async function getDCFToken(code, redirectURi) {
     });
     const jsonResponse = await response.json();
     validateResponseOrThrow(response);
-    console.log(jsonResponse)
+    console.log(jsonResponse.access_token)
     return jsonResponse.access_token;
 }
 
 async function dcfLogout(tokens) {
-    console.log(client.LOGOUT_URL)
-    console.log(Buffer.from(client.CLIENT_ID + ':' + client.CLIENT_SECRET).toString('base64'))
+    console.log("dcfLogout")
 
     const result = await nodeFetch(client.LOGOUT_URL, {
         method: 'GET',
@@ -50,7 +47,7 @@ async function dcfLogout(tokens) {
 
 
 async function dcfUserInfo(accessToken) {
-    console.log(client.USERINFO_URL)
+    console.log("dcfUserInfo")
     const result = await nodeFetch(client.USERINFO_URL, {
         method: 'GET',
         headers: {
