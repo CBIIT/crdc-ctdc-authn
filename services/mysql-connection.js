@@ -6,17 +6,20 @@ const connection = mysql.createPool({
     user: config.mysql_user,
     password: config.mysql_password,
     database: config.mysql_database,
+    insecureAuth : false
 });
 
 const getTTL = (req, res) => {
-    connection.getConnection(async function (err, currentConnection) {
+    console.log("getTTL")
+
+     connection.getConnection(async function (err, currentConnection) {
         const sessionID = getSessionIDFromCookie(req, res);
         if (err) {
             console.log(err);
             res.json({ttl: null, error: "Could not establish a connection to the session database, see logs for details"});
             return;
         }
-        else if (sessionID){
+        else if (sessionID !== null){
             connection.query("select expires from sessions where session_id=?", sessionID, (err, rows) => {
                 let response;
                 if (err){
