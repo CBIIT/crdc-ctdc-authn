@@ -10,14 +10,30 @@ const {AuthenticationService} = require("../services/authenticatation-service");
 // const {Neo4jDriver} = require("../neo4j/neo4j");
 // const {Neo4jService} = require("../neo4j/neo4j-service");
 const {UserService} = require("../services/user-service");
+if (config.database_type = 'MYSQL') {
+    console.log('Database type SQL ')
+    //services
 
-//services
-// const neo4j = new Neo4jDriver(config.neo4j_uri, config.neo4j_user, config.neo4j_password);
-// const neo4jService = new Neo4jService(neo4j);
-// const eventService = new EventService(neo4j);
-// const userService = new UserService(neo4jService);
-// const tokenService = new TokenService(config.token_secret, userService);
-// const authService = new AuthenticationService(tokenService, userService);
+    // const eventService = new EventService(MYSQL);
+    // const userService = new UserService(neo4jService);
+    // const tokenService = new TokenService(config.token_secret, userService);
+    // const authService = new AuthenticationService(tokenService, userService);
+    
+}
+else if (config.database_type = 'NEO4J'){
+    console.log('Database type NEO4J ')
+    //services
+    // const neo4j = new Neo4jDriver(config.neo4j_uri, config.neo4j_user, config.neo4j_password);
+    // const neo4jService = new Neo4jService(neo4j);
+    // const eventService = new EventService(neo4j);
+    // const userService = new UserService(neo4jService);
+    // const tokenService = new TokenService(config.token_secret, userService);
+    // const authService = new AuthenticationService(tokenService, userService);
+}
+else {
+    throw new Error("Invalid database_type")
+}
+
 
 /* Login */
 /* Granting an authenticated token */
@@ -34,7 +50,8 @@ router.post('/login', async function (req, res) {
         };
         req.session.userInfo = formatVariables(req.session.userInfo, ["IDP"], formatMap);
         // we do not need userInfo in neo4j
-        //await eventService.storeLoginEvent(req.session.userInfo.email, req.session.userInfo.IDP);
+        // await eventService.storeLoginEvent(req.session.userInfo.email, req.session.userInfo.IDP);
+        
         req.session.tokens = tokens;
         res.json({name, email, "timeout": config.session_timeout / 1000});
     } catch (e) {
@@ -58,7 +75,7 @@ router.post('/logout', async function (req, res, next) {
         await idpClient.logout(idp, req.session.tokens);
         // we do not need userInfo in neo4j
         // let userInfo = req.session.userInfo;
-        // await eventService.storeLogoutEvent(userInfo.email, userInfo.IDP);
+        await eventService.storeLogoutEvent(userInfo.email, userInfo.IDP);
         // Remove User Session
         return logout(req, res);
     } catch (e) {
