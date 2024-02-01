@@ -50,8 +50,8 @@ router.post('/login', async function (req, res) {
         };
         req.session.userInfo = formatVariables(req.session.userInfo, ["IDP"], formatMap);
         // we do not need userInfo in neo4j
-        // await eventService.storeLoginEvent(req.session.userInfo.email, req.session.userInfo.IDP);
-        
+        await eventService.storeLoginEvent(req.session.userInfo.email, req.session.userInfo.IDP);
+
         req.session.tokens = tokens;
         res.json({name, email, "timeout": config.session_timeout / 1000});
     } catch (e) {
