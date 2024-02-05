@@ -71,7 +71,7 @@ router.post('/logout', async function (req, res, next) {
         await idpClient.logout(idp, req.session.tokens);
         // we do not need userInfo in neo4j
         // let userInfo = req.session.userInfo;
-        await eventService.storeLogoutEvent(userInfo.email, userInfo.IDP);
+        await eventService.storeLogoutEvent(userInfo.email, userInfo.IDP,config.database_type);
         // Remove User Session
         return logout(req, res);
     } catch (e) {

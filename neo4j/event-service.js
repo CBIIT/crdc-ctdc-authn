@@ -25,24 +25,31 @@ class EventService {
         const loginEvent = new LoginEvent(userID, userEmail, userIDP);
         await logEvent(this.neo4j, loginEvent);
         }
-        if (databaseType = "MYSQL"){// convert to upper case for conparsion 
+        else if (databaseType = "MYSQL"){// convert to upper case for conparsion 
         console.log("Switch to SQL ");
         let LoginEventSQL = new LoginEventSQL(userID, this.mySQL)
         this.databaseConnector.logEvent(LoginEventSQL);
        }
+       else {
+        console.log("throw error");
+         }   
+       
     }
 
-    async storeLogoutEvent(userEmail, userIDP){
-        try{
+    async storeLogoutEvent(userEmail, userIDP, databaseType){
+        if (databaseType = "NEO4J"){
         let userID = await getUserID(this.neo4j, userEmail, userIDP);
         const logoutEvent = new LogoutEvent(userID, userEmail, userIDP);
         await logEvent(this.neo4j, logoutEvent);
         }
-        catch{
+        else if (databaseType = "MYSQL"){
             console.log("Switch to SQL ");
             let LoginEventSQL = new LoginEventSQL(userID, this.mySQL)
             this.databaseConnector.logEvent(LoginEventSQL);
-           }
+        }
+        else {
+            console.log("throw error");
+        }
     }
 }
 
