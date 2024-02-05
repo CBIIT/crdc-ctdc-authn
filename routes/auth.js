@@ -35,7 +35,6 @@ else {
 /* Login */
 /* Granting an authenticated token */
 router.post('/login', async function (req, res) {
-    console.log(req.body)
     try {
         const reqIDP = config.getIdpOrDefault(req.body['IDP']);
         const { name, lastName, tokens, email, idp } = await idpClient.login(req.body['code'], reqIDP, config.getUrlOrDefault(reqIDP, req.body['redirectUri']));
