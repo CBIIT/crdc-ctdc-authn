@@ -29,7 +29,7 @@ class EventService {
 
     async storeLogoutEvent(userID,userEmail, userIDP,databaseType){
         
-        if (databaseType.toUpperCase() = "NEO4J"){
+        if (databaseType.toUpperCase() == "NEO4J"){
         let userID = await getUserID(this.neo4j, userEmail, userIDP);
         const logoutEvent = new LogoutEvent(userID, userEmail, userIDP);
         await logEvent(this.neo4j, logoutEvent);

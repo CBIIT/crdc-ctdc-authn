@@ -11,7 +11,6 @@ const {Neo4jDriver} = require("../neo4j/neo4j");
 const {mySQLDriver} = require("../neo4j/mySQL.js");
 const {Neo4jService} = require("../neo4j/neo4j-service");
 const {UserService} = require("../services/user-service");
-const {MySQLConnector} = require("../bento-event-logging/mySQL/MySQLConnector.js");
 const { dcfUserInfo } = require('../services/dcf-auth.js');
 // const {storeLoginEvent} = require("../neo4j/event-service.js");
 let eventService = null;
