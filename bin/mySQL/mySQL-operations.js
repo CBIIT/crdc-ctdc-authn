@@ -75,9 +75,10 @@ async function getCreateCommand(userID,eventType,userEmail,userIDP) {
 
 //         if (!rows || !rows[0] || !rows[0].data) {
 //             console.log("Session expires");
-//             return -1; // or handle accordingly
+//             return -1 // or handle accordingly
 //         } else {
-//             const output = JSON.parse(rows[0].data).userInfo.tokens;
+//             // const output = JSON.parse(rows[0].data).userInfo.tokens;
+//             const output = resp.end(JSON.stringify(rows));
 //             return output;
 //         }
 //     } else {
@@ -186,6 +187,7 @@ async function getCreateCommand(userID,eventType,userEmail,userIDP) {
 
 module.exports = {
     getCreateCommand
+    // getEventAfterTimestamp
     // getEventAfterTimestamp,
     // clearEventsAfterTimestamp,
     // getEventsAfterTimestamp
