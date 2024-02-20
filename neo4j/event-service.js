@@ -20,8 +20,6 @@ class EventService {
             console.log("Switch to SQL ");
             let eventType = "Login"
             mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
-            // console.log(mySQLOps.getEventAfterTimestamp('2024-02-16 15:09:22',eventType))
-            console.log("hello");
        }
        else {
             console.log("throw error");
