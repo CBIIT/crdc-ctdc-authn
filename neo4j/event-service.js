@@ -1,5 +1,5 @@
 const {getUserID, logEvent} = require("../bento-event-logging/neo4j/neo4j-operations");
-const mySQLOps = require("../bin/mySQL/mySQL-operations.js");
+const mySQLOps = require("../services/mySQL/mySQL-operations.js");
 class EventService {
     constructor(databaseConnection) { //rename databse connection
         this.databaseConnection = databaseConnection.connection;
@@ -18,7 +18,11 @@ class EventService {
             }
         if (databaseType.toUpperCase() == "MYSQL"){
             console.log("Switch to SQL ");
-            let eventType = "Login"
+            let eventType = "Login";
+            
+            // let output = mySQLOps.getEventAfterTimestamp('2024-02-20 19:17:03',eventType);
+            // await output;
+            // console.log(output);
             mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
        }
        else {
