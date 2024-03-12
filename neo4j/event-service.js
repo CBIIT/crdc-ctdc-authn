@@ -23,10 +23,10 @@ class EventService {
             // let output = mySQLOps.getEventAfterTimestamp('2024-02-20 19:17:03',eventType);
             // await output;
             // console.log(output);
-            mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
+            await mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
        }
        else {
-            console.log("throw error");
+            throw new Error("Invalid database_type")
          }   
        
     }
@@ -34,18 +34,18 @@ class EventService {
     async storeLogoutEvent(userID,userEmail, userIDP,databaseType){
         
         if (databaseType.toUpperCase() == "NEO4J"){
-        let userID = await getUserID(this.neo4j, userEmail, userIDP);
-        const logoutEvent = new LogoutEvent(userID, userEmail, userIDP);
-        await logEvent(this.neo4j, logoutEvent);
+            let userID = await getUserID(this.neo4j, userEmail, userIDP);
+            const logoutEvent = new LogoutEvent(userID, userEmail, userIDP);
+            await logEvent(this.neo4j, logoutEvent);
         }
         if (databaseType.toUpperCase() == "MYSQL"){
             let eventType = "Logout"
             console.log("Switch to SQL ");
             
-            mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
+            await mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
         }
         else {
-            console.log("throw error");
+            throw new Error("Invalid database_type")
         }
     }
 }

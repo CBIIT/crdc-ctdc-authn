@@ -17,16 +17,15 @@ async checkTokenAndClean(req,res) {
                 let sessionIDFromTable = await responseFromPromise;
                 console.log("response " + sessionIDFromTable)
                 if (sessionIDFromTable == sessionID){
-                    mySQLOps.clearEventsBeforeTimestamp(timestamp);
+                    await mySQLOps.clearEventsBeforeTimestamp();
+                    await mySQLOps.getCreateCommand("System","Database Cleaning","System","System");
                 }
                 else{
-                    console.log("Does not equal ");
+                    console.log("Session ID does not match");
                 }
-                res.json(response);
             }
         else {
-            console.log("is null ");
-            // res.json({ttl: null, error: "An internal server error occurred, please contact the administrators"});
+            console.log("Session ID is null ");
         };
     }
     

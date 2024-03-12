@@ -31,7 +31,7 @@ async function getCreateCommand(userID,eventType,userEmail,userIDP) {
             });
 
             if (!rows || !rows[0] || !rows[0].data) {
-                console.log("get create command runs ");
+                console.log("Create Command Runs");
                 return -1; // or handle accordingly
             } else {
                 const output = JSON.parse(rows[0].data).userInfo.tokens;
@@ -102,7 +102,7 @@ async function getEventAfterTimestamp(timestamp,eventType) {
 }
 }
 
-async function clearEventsBeforeTimestamp(timestamp) {
+async function clearEventsBeforeTimestamp() {
     let currentConnection = null;
     try {
     const currentConnection = await new Promise((resolve, reject) => {
@@ -118,7 +118,7 @@ async function clearEventsBeforeTimestamp(timestamp) {
     if (sessionID !== null) {
         const rows = await new Promise((resolve, reject) => {
             
-            currentConnection.query("DELETE FROM ctdc.eventTable WHERE timestamp < TIMESTAMP(NOW())", (err, rows) => {
+            currentConnection.query("DELETE FROM ctdc.eventTable WHERE timestamp < TIMESTAMP(NOW());DELETE FROM ctdc.loginTable WHERE timestamp < TIMESTAMP(NOW())", (err, rows) => {
                 if (err) reject(err);
                 else resolve(rows);
             });
@@ -172,7 +172,7 @@ async function compareSessionID(sessionID) {
             return -1; // or handle accordingly
         } else {
             const output = rows[0].session_id
-            return output;
+               return output;
         }
     } else {
         console.log("An internal server error occurred, please contact the administrators");

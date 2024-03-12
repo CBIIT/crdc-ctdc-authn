@@ -62,14 +62,13 @@ router.post('/login', async function (req, res) {
         req.session.userInfo = {
             email: email,
             IDP: idp,
-            firstName: name,
-            lastName: lastName
+            name: name
 
         };
         req.session.userInfo = formatVariables(req.session.userInfo, ["IDP"], formatMap);
         // we do not need userInfo in neo4j
         try{
-        await eventService.storeLoginEvent(req.session.userInfo.lastName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
+        await eventService.storeLoginEvent(req.session.userInfo.name,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
         }
         catch (err){
             console.log(err);
@@ -95,7 +94,7 @@ router.post('/logout', async function (req, res, next) {
          console.log(req.body['IDP'])
         const idp = config.getIdpOrDefault(req.body['IDP']);
         await idpClient.logout(idp, req.session.tokens);
-        await eventService.storeLogoutEvent(req.session.userInfo.lastName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
+        await eventService.storeLogoutEvent(req.session.userInfo.name,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
         // Remove User Session
         return logout(req, res);
     } catch (e) {
