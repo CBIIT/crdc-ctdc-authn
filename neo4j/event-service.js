@@ -17,6 +17,9 @@ class EventService {
             await logEvent(this.neo4j, loginEvent);
             }
         if (databaseType.toUpperCase() == "MYSQL"){
+            if (userID === undefined){
+                userID = 'Not yet registered';
+            }
             console.log("Switch to SQL ");
             let eventType = "Login";
             

@@ -189,6 +189,49 @@ async function compareSessionID(sessionID) {
     
 }
 }
+async function getLastLogin() {
+    let currentConnection = null;
+    try {
+    const currentConnection = await new Promise((resolve, reject) => {
+        connection.getConnection((err, connection) => {
+            if (err) reject(err);
+            else resolve(connection);
+        });
+    });
+
+
+    // let sessionID = getSessionIDFromCookie(req, res);
+    if (currentConnection !== null) {
+        const rows = await new Promise((resolve, reject) => {
+            currentConnection.query("SELECT * FROM ctdc.eventTable ORDER BY timestamp DESC LIMIT 1;", (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            });
+        });
+
+        if (!rows || !rows[0]) {
+            console.log("Session expires");
+            return -1; // or handle accordingly
+        } else {
+            const output = rows[0]
+               return output;
+        }
+    } else {
+        console.log("An internal server error occurred, please contact the administrators");
+        return -1;
+    }
+    if (currentConnection) currentConnection.release();
+} catch (error) {
+    console.log("Error: ", error.message);
+    return -1;
+} finally {
+     if (currentConnection) {
+        currentConnection.release(); // Ensure connection is released
+    }
+    
+}
+}
+
 
     
 
@@ -199,6 +242,7 @@ module.exports = {
     getCreateCommand,
     getEventAfterTimestamp,
     compareSessionID,
+    getLastLogin,
     // getEventAfterTimestamp,
     clearEventsBeforeTimestamp
     // getEventsAfterTimestamp
