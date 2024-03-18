@@ -10,16 +10,20 @@ const connection = mysql.createPool({
     insecureAuth : false,
     multipleStatements: true
 });
-async function getCreateCommand(userID,eventType,userEmail,userIDP) {
-        let currentConnection = null;
-        try {
-        const currentConnection = await new Promise((resolve, reject) => {
-            connection.getConnection((err, connection) => {
-                if (err) reject(err);
-                else resolve(connection);
-            });
-        });
 
+
+
+async function getCreateCommand(userID,eventType,userEmail,userIDP) {
+        
+    let currentConnection = null;
+    try {
+    const currentConnection = await new Promise((resolve, reject) => {
+        connection.getConnection((err, connection) => {
+            if (err){console.log("line 18 results " +  err);reject(err);} 
+            
+            else resolve(connection);
+        });
+    }); 
         // let sessionID = getSessionIDFromCookie(req, res);
         let sessionID = 1; // Example sessionID
         if (sessionID !== null) {

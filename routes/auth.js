@@ -13,6 +13,7 @@ const {Neo4jService} = require("../neo4j/neo4j-service");
 const {UserService} = require("../services/user-service");
 const {CleaningService} = require("../services/clean-events.js")
 const { dcfUserInfo } = require('../services/dcf-auth.js');
+const { error } = require('neo4j-driver');
 // const { token } = require('morgan');
 // const {storeLoginEvent} = require("../neo4j/event-service.js");
 let eventService = null;
@@ -68,8 +69,13 @@ router.post('/login', async function (req, res) {
         req.session.userInfo = formatVariables(req.session.userInfo, ["IDP"], formatMap);
         // we do not need userInfo in neo4j
         try{
-        await eventService.storeLoginEvent(req.session.userInfo.name,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
-        }
+            if (!req.session?.userInfo || !req.session.userInfo?.name){
+                console.log("userInfo is undefined " + req.session.userInfo?.name) 
+                return 
+            }
+            await eventService.storeLoginEvent(req.session.userInfo.name,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
+            
+        }   
         catch (err){
             console.log(err);
         }
@@ -89,18 +95,26 @@ router.post('/login', async function (req, res) {
 
 /* Logout */
 router.post('/logout', async function (req, res, next) {
+    
+
+    
     try {
         console.log("logout")
          console.log(req.body['IDP'])
         const idp = config.getIdpOrDefault(req.body['IDP']);
         await idpClient.logout(idp, req.session.tokens);
+        if (!req.session?.userInfo){
+            console.log("userInfo is undefined " + req.session?.userInfo) 
+            return 
+        }
         await eventService.storeLogoutEvent(req.session.userInfo.name,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
         // Remove User Session
         return logout(req, res);
-    } catch (e) {
-        console.log(e);
-        res.status(500).json({errors: e});
-    }
+         } catch (e) {
+            console.log(e);
+            res.status(500).json({errors: e});
+        }
+ 
 });
 
 /* Authenticated */
@@ -120,8 +134,10 @@ router.post('/authenticated', async function (req, res) {
 router.post('/cleanUp', async function (req, res) {
     try {
         await cleaningService.checkTokenAndClean(req,res);
+        res.status(200).send({ status : Boolean(req?.session?.tokens) });
     } catch (e) {
         console.log(e);
+        res.status(500).json({errors: e});
     }
 });
 

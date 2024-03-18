@@ -22,7 +22,7 @@ class EventService {
             
 
             await mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
-
+            console.log("Has completed creating login event")
        }
        else {
             throw new Error("Invalid database_type")
@@ -42,7 +42,7 @@ class EventService {
             console.log("Switch to SQL ");
             
             await mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
-          
+            console.log("Has completed creating logout event")
         }
         else {
             throw new Error("Invalid database_type")

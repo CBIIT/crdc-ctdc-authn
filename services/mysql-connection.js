@@ -46,12 +46,13 @@ const getTTL = (req, res) => {
 }
 
 function getSessionIDFromCookie(req, res){
-    if (!req || !req.cookies || !req.cookies["connect.sid"]){
+    if (!req || !req?.cookies || !req?.cookies["connect.sid"]){
+        console.log("this Req " + req?.cookies)
         res.json({ttl: 0});
         return null;
     }
     else{
-        return req.cookies["connect.sid"].match(':.*[.]')[0].slice(1,-1);
+        return req?.cookies["connect.sid"].match(':.*[.]')[0].slice(1,-1);
     }
 }
 
