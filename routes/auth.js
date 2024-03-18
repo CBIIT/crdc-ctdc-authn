@@ -70,7 +70,7 @@ router.post('/login', async function (req, res) {
         // we do not need userInfo in neo4j
         try{
             if (!req.session?.userInfo || !req.session.userInfo?.name){
-                console.log("userInfo is undefined " + req.session.userInfo?.name) 
+                console.log("userInfo is " + req.session.userInfo?.name) 
                 return 
             }
             await eventService.storeLoginEvent(req.session.userInfo.name,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
