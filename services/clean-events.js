@@ -15,7 +15,6 @@ async checkTokenAndClean(req,res) {
                 
                 let responseFromPromise = mySQLOps.compareSessionID(sessionID);
                 let sessionIDFromTable = await responseFromPromise;
-                console.log("response " + sessionIDFromTable)
                 if (sessionIDFromTable == sessionID){
                     await mySQLOps.clearEventsBeforeTimestamp();
                     await mySQLOps.getCreateCommand("System","Database Cleaning","System","System");

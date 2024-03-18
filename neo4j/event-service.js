@@ -16,17 +16,13 @@ class EventService {
             const loginEvent = new LoginEvent(userID, userEmail, userIDP,connectionParams);
             await logEvent(this.neo4j, loginEvent);
             }
-        if (databaseType.toUpperCase() == "MYSQL"){
-            if (userID === undefined){
-                userID = 'Not yet registered';
-            }
+        else if (databaseType.toUpperCase() == "MYSQL"){
             console.log("Switch to SQL ");
             let eventType = "Login";
             
-            // let output = mySQLOps.getEventAfterTimestamp('2024-02-20 19:17:03',eventType);
-            // await output;
-            // console.log(output);
+
             await mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
+
        }
        else {
             throw new Error("Invalid database_type")
@@ -41,11 +37,12 @@ class EventService {
             const logoutEvent = new LogoutEvent(userID, userEmail, userIDP);
             await logEvent(this.neo4j, logoutEvent);
         }
-        if (databaseType.toUpperCase() == "MYSQL"){
+        else if (databaseType.toUpperCase() == "MYSQL"){
             let eventType = "Logout"
             console.log("Switch to SQL ");
             
             await mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
+          
         }
         else {
             throw new Error("Invalid database_type")

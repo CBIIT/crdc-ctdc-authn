@@ -159,7 +159,7 @@ async function compareSessionID(sessionID) {
 
 
     // let sessionID = getSessionIDFromCookie(req, res);
-    if (sessionID !== null) {
+    if (sessionID !== null ) {
         const rows = await new Promise((resolve, reject) => {
             currentConnection.query("SELECT session_id FROM ctdc.sessions where session_id = '" + sessionID + "';", (err, rows) => {
                 if (err) reject(err);
