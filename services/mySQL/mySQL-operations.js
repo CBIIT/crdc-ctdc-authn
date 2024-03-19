@@ -33,7 +33,6 @@ async function getCreateCommand(userID,eventType,userEmail,userIDP) {
                     else resolve(rows);
                 });
             });
-
             if (!rows || !rows[0] || !rows[0].data) {
                 console.log("Create Command Runs");
                 return -1; // or handle accordingly
@@ -94,7 +93,6 @@ async function getEventAfterTimestamp(timestamp,eventType) {
         console.log("An internal server error occurred, please contact the administrators");
         return -1;
     }
-    if (currentConnection) currentConnection.release();
 } catch (error) {
     console.log("Error: ", error.message);
     return -1;
@@ -139,7 +137,6 @@ async function clearEventsBeforeTimestamp() {
         console.log("An internal server error occurred, please contact the administrators");
         return -1;
     }
-    if (currentConnection) currentConnection.release();
 } catch (error) {
     console.log("Error: ", error.message);
     return -1;
@@ -182,7 +179,6 @@ async function compareSessionID(sessionID) {
         console.log("An internal server error occurred, please contact the administrators");
         return -1;
     }
-    if (currentConnection) currentConnection.release();
 } catch (error) {
     console.log("Error: ", error.message);
     return -1;
@@ -224,7 +220,6 @@ async function getLastLogin() {
         console.log("An internal server error occurred, please contact the administrators");
         return -1;
     }
-    if (currentConnection) currentConnection.release();
 } catch (error) {
     console.log("Error: ", error.message);
     return -1;
