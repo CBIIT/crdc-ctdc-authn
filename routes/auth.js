@@ -105,7 +105,7 @@ router.post('/logout', async function (req, res, next) {
         await idpClient.logout(idp, req.session.tokens);
         if (!req.session?.userInfo){
             console.log("userInfo is undefined " + req.session?.userInfo) 
-            return 
+            return logout(req, res);
         }
         await eventService.storeLogoutEvent(req.session.userInfo.name,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
         // Remove User Session
