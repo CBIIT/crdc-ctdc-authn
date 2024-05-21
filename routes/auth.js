@@ -29,7 +29,8 @@ router.post('/login', async function (req, res) {
             email: email,
             IDP: idp,
             firstName: name,
-            lastName: lastName
+            lastName: lastName,
+            tokens: tokens
         };
         req.session.userInfo = formatVariables(req.session.userInfo, ["IDP"], formatMap);
         // we do not need userInfo in neo4j
