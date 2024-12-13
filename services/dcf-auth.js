@@ -19,7 +19,8 @@ async function getDCFToken(code, redirectURi) {
             redirect_uri: redirectURi,
             grant_type: "authorization_code",
             client_id: client.CLIENT_ID,
-            scope: "openid%20user"
+            client_secret: client.CLIENT_SECRET,
+            scope: "openid%20user%20data"
         })
     });
     const jsonResponse = await response.json();

@@ -1,4 +1,4 @@
-# Bento AuthN/AuthZ service
+# Clinical and Translational Data Commons AuthN/AuthZ service
 
 ## Environmental Variables
 Following environmental variables are needed
