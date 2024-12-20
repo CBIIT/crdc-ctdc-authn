@@ -1,16 +1,18 @@
-const jwt = require("jsonwebtoken");
 const mySQLOps = require("../services/mySQL/mySQL-operations.js");
+
+
 class CleaningService {
 
     constructor(tokenSecret,userService) {
         this.tokenSecret = tokenSecret;
         this.userService = userService;
     }
+}
 
 
-
-async checkTokenAndClean(req,res) {
+async function checkTokenAndClean(req,res) {
         const sessionID = getSessionIDFromCookie(req, res);
+        let response = ""
         if (sessionID !== null){
                 
                 let responseFromPromise = mySQLOps.compareSessionID(sessionID);
@@ -18,17 +20,25 @@ async checkTokenAndClean(req,res) {
                 if (sessionIDFromTable == sessionID){
                     await mySQLOps.clearEventsBeforeTimestamp();
                     await mySQLOps.getCreateCommand("System","Database Cleaning","System","System");
+                    console.log("Database Wiped successfully");
+                        response = "Database Wiped successfully";
+                        return response
                 }
                 else{
+
                     console.log("Session ID does not match");
+                    response = "Session ID does not match"
+                    return response
                 }
-            }
-        else {
-            console.log("Session ID is null ");
+        } else{
+
+            console.log("Session ID is Null");
+            response = "Session ID is Null"
+            return response
         };
-    }
-    
+
 }
+    
 
 function getSessionIDFromCookie(req, res){
     if (!req || !req.cookies ){
@@ -45,6 +55,4 @@ function getSessionIDFromCookie(req, res){
 
 
 
-module.exports = {
-    CleaningService
-}
+module.exports = {CleaningService,checkTokenAndClean}

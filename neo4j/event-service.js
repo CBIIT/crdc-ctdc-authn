@@ -6,7 +6,7 @@ class EventService {
     } 
 
     async storeLoginEvent(userID,userEmail, userIDP,databaseType){
-
+        let loginResponse = ""
         if (databaseType.toUpperCase() == "NEO4J"){ //TODO make this toupper
             let userID = await getUserID(this.neo4j, userEmail, userIDP);
             if (userID === undefined){
@@ -23,6 +23,8 @@ class EventService {
 
             await mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
             console.log("Has completed creating login event")
+            loginResponse = 'completed creating login event'
+                return loginResponse
        }
        else {
             throw new Error("Invalid database_type")
@@ -31,7 +33,7 @@ class EventService {
     }
 
     async storeLogoutEvent(userID,userEmail, userIDP,databaseType){
-        
+        let logoutResponse = ""
         if (databaseType.toUpperCase() == "NEO4J"){
             let userID = await getUserID(this.neo4j, userEmail, userIDP);
             const logoutEvent = new LogoutEvent(userID, userEmail, userIDP);
@@ -40,9 +42,15 @@ class EventService {
         else if (databaseType.toUpperCase() == "MYSQL"){
             let eventType = "Logout"
             console.log("Switch to SQL ");
-            
+            if (userID === undefined){
+                userID = 'Session expired';
+                logoutResponse = 'Session expired'
+                return logoutResponse
+            }
             await mySQLOps.getCreateCommand(userID,eventType,userEmail,userIDP);
             console.log("Has completed creating logout event")
+            logoutResponse = 'completed creating logout event'
+            return logoutResponse
         }
         else {
             throw new Error("Invalid database_type")

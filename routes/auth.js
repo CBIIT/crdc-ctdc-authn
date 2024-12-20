@@ -12,8 +12,7 @@ const {mySQLDriver} = require("../neo4j/mySQL.js");
 const {Neo4jService} = require("../neo4j/neo4j-service");
 const {UserService} = require("../services/user-service");
 const {CleaningService} = require("../services/clean-events.js")
-const { dcfUserInfo } = require('../services/dcf-auth.js');
-const { error } = require('neo4j-driver');
+const { checkTokenAndClean } = require("../services/clean-events.js")
 // const { token } = require('morgan');
 // const {storeLoginEvent} = require("../neo4j/event-service.js");
 let eventService = null;
@@ -56,7 +55,7 @@ else {
 /* Login */
 /* Granting an authenticated token */
 router.post('/login', async function (req, res) {
-    console.log("Switch to SQL ");
+
     try {
         const reqIDP = config.getIdpOrDefault(req.body['IDP']);
         const { name, lastName, tokens, email, idp } = await idpClient.login(req.body['code'], reqIDP, config.getUrlOrDefault(reqIDP, req.body['redirectUri']));
@@ -70,11 +69,11 @@ router.post('/login', async function (req, res) {
         req.session.userInfo = formatVariables(req.session.userInfo, ["IDP"], formatMap);
         // we do not need userInfo in neo4j
         try{
-            if (!req.session?.userInfo || !req.session.userInfo?.name){
-                console.log("userInfo is " + req.session.userInfo?.name) 
+            if (!req.session?.userInfo || !req.session.userInfo?.firstName){
+                console.log("userInfo is " + req.session.userInfo?.firstName) 
                 return 
             }
-            await eventService.storeLoginEvent(req.session.userInfo.name,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
+            await eventService.storeLoginEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
             
         }   
         catch (err){
@@ -105,10 +104,10 @@ router.post('/logout', async function (req, res, next) {
         const idp = config.getIdpOrDefault(req.body['IDP']);
         await idpClient.logout(idp, req.session.tokens);
         if (!req.session?.userInfo){
-            console.log("userInfo is undefined " + req.session?.userInfo) 
+            console.log("userInfo is " + req.session?.userInfo) 
             return logout(req, res);
         }
-        await eventService.storeLogoutEvent(req.session.userInfo.name,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
+        await eventService.storeLogoutEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
         // Remove User Session
         return logout(req, res);
          } catch (e) {
@@ -134,8 +133,8 @@ router.post('/authenticated', async function (req, res) {
 
 router.post('/cleanUp', async function (req, res) {
     try {
-        await cleaningService.checkTokenAndClean(req,res);
-        res.status(200).send({ status : Boolean(req?.session?.tokens) });
+        let response = await checkTokenAndClean(req,res);
+        res.status(200).send({ status : response });
     } catch (e) {
         console.log(e);
         res.status(500).json({errors: e});

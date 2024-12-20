@@ -23,7 +23,10 @@ async function getCreateCommand(userID,eventType,userEmail,userIDP) {
             
             else resolve(connection);
         });
+
     }); 
+   
+
         // let sessionID = getSessionIDFromCookie(req, res);
         let sessionID = 1; // Example sessionID
         if (sessionID !== null) {
@@ -35,18 +38,21 @@ async function getCreateCommand(userID,eventType,userEmail,userIDP) {
             });
             if (!rows || !rows[0] || !rows[0].data) {
                 console.log("Create Command Runs");
+                currentConnection.release()
                 return -1; // or handle accordingly
             } else {
                 const output = JSON.parse(rows[0].data).userInfo.tokens;
+                currentConnection.release()
                 return output;
             }
         } else {
             console.log("An internal server error occurred, please contact the administrators");
+            currentConnection.release()
             return -1;
         }
-        if (currentConnection) currentConnection.release();
     } catch (error) {
         console.log("Error: ", error.message);
+        currentConnection.release()
         return -1;
     } finally {
          if (currentConnection) {
