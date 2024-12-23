@@ -89,18 +89,22 @@ async function getEventAfterTimestamp(timestamp,eventType) {
             console.log("Session expires");
             
             console.log(rows[0]);
+            currentConnection.release();
             return -1 // or handle accordingly
         } else {
             const output = json_rows
+            currentConnection.release();
             return output;
 
         }
     } else {
         console.log("An internal server error occurred, please contact the administrators");
+        currentConnection.release();
         return -1;
     }
 } catch (error) {
     console.log("Error: ", error.message);
+    currentConnection.release();
     return -1;
 } finally {
      if (currentConnection) {
@@ -134,9 +138,11 @@ async function clearEventsBeforeTimestamp() {
 
         if (!rows || !rows[0] || !rows[0].data) {
             console.log("Session expires");
+            currentConnection.release();
             return -1; // or handle accordingly
         } else {
             const output = JSON.parse(rows[0].data).userInfo.tokens;
+            currentConnection.release();
             return output;
         }
     } else {
@@ -145,6 +151,7 @@ async function clearEventsBeforeTimestamp() {
     }
 } catch (error) {
     console.log("Error: ", error.message);
+    currentConnection.release();
     return -1;
 } finally {
      if (currentConnection) {
@@ -176,9 +183,11 @@ async function compareSessionID(sessionID) {
 
         if (!rows || !rows[0]) {
             console.log("Session expires");
+            currentConnection.release();
             return -1; // or handle accordingly
         } else {
             const output = rows[0].session_id
+            currentConnection.release();
                return output;
         }
     } else {
@@ -187,6 +196,7 @@ async function compareSessionID(sessionID) {
     }
 } catch (error) {
     console.log("Error: ", error.message);
+    currentConnection.release();
     return -1;
 } finally {
      if (currentConnection) {
@@ -217,17 +227,21 @@ async function getLastLogin() {
 
         if (!rows || !rows[0]) {
             console.log("Session expires");
+            currentConnection.release();
             return -1; // or handle accordingly
         } else {
             const output = rows[0]
+            currentConnection.release();
                return output;
         }
     } else {
         console.log("An internal server error occurred, please contact the administrators");
+        currentConnection.release();
         return -1;
     }
 } catch (error) {
     console.log("Error: ", error.message);
+    currentConnection.release();
     return -1;
 } finally {
      if (currentConnection) {
