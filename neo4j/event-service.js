@@ -1,9 +1,8 @@
 const {getUserID, logEvent} = require("../bento-event-logging/neo4j/neo4j-operations");
-const mySQLOps = require("../services/mySQL/mySQL-operations.js");
+const {LoginEvent} = require("../bento-event-logging/model/login-event");
+const {LogoutEvent} = require("../bento-event-logging/model/logout-event");
+
 class EventService {
-    constructor(databaseConnection) { //rename databse connection
-        this.databaseConnection = databaseConnection.connection;
-    } 
 
     async storeLoginEvent(userID,userEmail, userIDP,databaseType){
         let loginResponse = ""
@@ -55,6 +54,14 @@ class EventService {
         else {
             throw new Error("Invalid database_type")
         }
+        const loginEvent = new LoginEvent(userID, userEmail, userIDP);
+        await logEvent(this.neo4j, loginEvent);
+    }
+
+    async storeLogoutEvent(userEmail, userIDP){
+        let userID = await getUserID(this.neo4j, userEmail, userIDP);
+        const logoutEvent = new LogoutEvent(userID, userEmail, userIDP);
+        await logEvent(this.neo4j, logoutEvent);
     }
 }
 
