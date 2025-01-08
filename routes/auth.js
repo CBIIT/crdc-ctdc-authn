@@ -8,13 +8,11 @@ const {TokenService} = require("../services/token-service");
 const {AuthenticationService} = require("../services/authenticatation-service");
 const {EventService} = require("../neo4j/event-service");
 const {Neo4jDriver} = require("../neo4j/neo4j");
-const {mySQLDriver} = require("../neo4j/mySQL.js");
 const {Neo4jService} = require("../neo4j/neo4j-service");
 const {UserService} = require("../services/user-service");
 const {CleaningService} = require("../services/clean-events.js")
 const { checkTokenAndClean } = require("../services/clean-events.js")
-// const { token } = require('morgan');
-// const {storeLoginEvent} = require("../neo4j/event-service.js");
+
 let eventService = null;
 let cleaningService = null;
 let userService = null;
@@ -42,10 +40,7 @@ else if (config.database_type.toUpperCase() == 'NEO4J'){
     //services
     const neo4j = new Neo4jDriver(config.neo4j_uri, config.neo4j_user, config.neo4j_password);
     const neo4jService = new Neo4jService(neo4j);
-    // eventService = new EventService(neo4j);`
-    // const userService = new UserService(neo4jService);
-    // const tokenService = new TokenService(config.token_secret, userService);
-    // const authService = new AuthenticationService(tokenService, userService);
+
 
 }
 else {
@@ -122,9 +117,8 @@ router.post('/logout', async function (req, res, next) {
 //Calling this API will refresh the session
 router.post('/authenticated', async function (req, res) {
     try {
-        // const status = await authService.authenticate(req);
+
         res.status(200).send({ status : Boolean(req?.session?.tokens) });
-        // res.status(200).send({ status : true });
     } catch (e) {
         console.log(e);
         res.status(500).json({errors: e});
