@@ -61,7 +61,7 @@ const config = {
     PROMPT: process.env.DCF_PROMPT
   },
 
-  
+  database_type: process.env.DATABASE_TYPE,
   // Neo4j Connection
   neo4j_uri: process.env.NEO4J_URI,
   neo4j_user: process.env.NEO4J_USER,
