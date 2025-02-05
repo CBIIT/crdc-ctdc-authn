@@ -97,7 +97,7 @@ router.post('/logout', async function (req, res) {
     
     try {
         console.log("logout")
-         console.log(req.body['IDP'])
+         console.log(" request IDP body " + req.body['IDP'])
         const idp = config.getIdpOrDefault(req.body['IDP']);
         await idpClient.logout(idp, req.session.tokens);
         console.log("session : " + req.session) 
@@ -120,7 +120,6 @@ router.post('/logout', async function (req, res) {
 // Return {status: true} or {status: false}
 //Calling this API will refresh the session
 router.post('/authenticated', async function (req, res) {
-    console.log("request token for authenticated :" + req?.session?.tokens)
     try {
         
         res.status(200).send({ status : Boolean(req?.session?.tokens) });

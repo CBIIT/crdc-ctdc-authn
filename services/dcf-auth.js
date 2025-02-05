@@ -9,6 +9,7 @@ const client = config.DCF;
 
 async function getDCFToken(code, redirectURi) {
     console.log("getDCFToken")
+    console.log("getDCFToken... client" + client)
     const response = await nodeFetch(client.TOKEN_URL, {
         method: 'POST',
         headers: {
@@ -32,6 +33,7 @@ async function getDCFToken(code, redirectURi) {
 
 async function dcfLogout(tokens) {
     console.log("dcfLogout... Token :" + tokens)
+    console.log("dcfLogout... client" + client)
 
     const result = await nodeFetch(client.LOGOUT_URL, {
         method: 'GET',
@@ -50,6 +52,7 @@ async function dcfLogout(tokens) {
 
 async function dcfUserInfo(accessToken) {
     console.log("dcfUserInfo... token: " + accessToken)
+    console.log("dcfLogout... Client information :" + client)
     const result = await nodeFetch(client.USERINFO_URL, {
         method: 'GET',
         headers: {
