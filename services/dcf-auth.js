@@ -24,13 +24,14 @@ async function getDCFToken(code, redirectURi) {
         })
     });
     const jsonResponse = await response.json();
+    console.log(jsonResponse)
     validateResponseOrThrow(response);
-    console.log(jsonResponse.access_token)
+    console.log("HERE TOKEN " + jsonResponse.access_token)
     return jsonResponse.access_token;
 }
 
 async function dcfLogout(tokens) {
-    console.log("dcfLogout")
+    console.log("dcfLogout... Token :" + tokens)
 
     const result = await nodeFetch(client.LOGOUT_URL, {
         method: 'GET',
@@ -48,7 +49,7 @@ async function dcfLogout(tokens) {
 
 
 async function dcfUserInfo(accessToken) {
-    console.log("dcfUserInfo")
+    console.log("dcfUserInfo... token: " + accessToken)
     const result = await nodeFetch(client.USERINFO_URL, {
         method: 'GET',
         headers: {

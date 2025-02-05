@@ -26,7 +26,7 @@ if (config.database_type.toUpperCase() == 'MYSQL') {
             url: config.mysql_host,
             database: config.mysql_database
     }
-    console.log('Database type SQL ')
+    console.log('Database type SQL ' )
     eventService = new EventService(connectionParams);
     
 
@@ -50,9 +50,10 @@ else {
 /* Login */
 /* Granting an authenticated token */
 router.post('/login', async function (req, res) {
-
+    console.log("request for login : " + req) 
     try {
         const reqIDP = config.getIdpOrDefault(req.body['IDP']);
+        console.log("request body code : " + req.body['code'])
         const { name, lastName, tokens, email, idp } = await idpClient.login(req.body['code'], reqIDP, config.getUrlOrDefault(reqIDP, req.body['redirectUri']));
         req.session.userInfo = {
             email: email,
@@ -75,6 +76,7 @@ router.post('/login', async function (req, res) {
             console.log(err);
         }
         req.session.tokens = tokens;
+        console.log("request token for login : " + req.session.tokens) 
         res.json({name, email, "timeout": config.session_timeout / 1000});
     } catch (e) {
         if (e.code && parseInt(e.code)) {
@@ -89,7 +91,7 @@ router.post('/login', async function (req, res) {
 });
 
 /* Logout */
-router.post('/logout', async function (req, res, next) {
+router.post('/logout', async function (req, res) {
     
 
     
@@ -98,10 +100,12 @@ router.post('/logout', async function (req, res, next) {
          console.log(req.body['IDP'])
         const idp = config.getIdpOrDefault(req.body['IDP']);
         await idpClient.logout(idp, req.session.tokens);
+        console.log("session : " + req.session) 
         if (!req.session?.userInfo){
-            console.log("userInfo is " + req.session?.userInfo) 
+            
             return logout(req, res);
         }
+        console.log("userInfo is " + req.session?.userInfo) 
         await eventService.storeLogoutEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
         // Remove User Session
         return logout(req, res);
@@ -116,8 +120,9 @@ router.post('/logout', async function (req, res, next) {
 // Return {status: true} or {status: false}
 //Calling this API will refresh the session
 router.post('/authenticated', async function (req, res) {
+    console.log("request token for authenticated :" + req?.session?.tokens)
     try {
-
+        
         res.status(200).send({ status : Boolean(req?.session?.tokens) });
     } catch (e) {
         console.log(e);
@@ -126,6 +131,7 @@ router.post('/authenticated', async function (req, res) {
 });
 
 router.post('/cleanUp', async function (req, res) {
+    console.log("request session for cleanup :" + req.session)
     try {
         let response = await checkTokenAndClean(req,res);
         res.status(200).send({ status : response });
