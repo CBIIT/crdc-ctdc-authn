@@ -46,7 +46,7 @@ const getTTL = (req, res) => {
 }
 
 function getSessionIDFromCookie(req, res){
-    console.log("Check these cookies : " + req.cookies)
+    console.log("Check these request : " + req)
     if (!req || !req?.cookies || !req?.cookies["connect.sid"]){
         console.log("this Req " + req?.cookies)
         res.json({ttl: 0});
