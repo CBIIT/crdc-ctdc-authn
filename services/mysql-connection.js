@@ -16,7 +16,6 @@ const getTTL = (req, res) => {
         const sessionID = getSessionIDFromCookie(req, res);
         if (err) {
             console.log(err);
-            res.json({ttl: null, error: "Could not establish a connection to the session database, see logs for details"});
             return;
         }
         else if (sessionID !== null){
@@ -45,19 +44,18 @@ const getTTL = (req, res) => {
     });
 }
 
-function getSessionIDFromCookie(req, res){
-    try{
-    if (!req || !req?.cookies || !req?.cookies["connect.sid"]){
-        res.json({ttl: 0});
-        return null;
-    }
-    else{
-        return req?.cookies["connect.sid"].match(':.*[.]')[0].slice(1,-1);
-    }
-}
-    catch{
-        console.log("error getting session ID from cookie " + req)
-    }
-}
+// function getSessionIDFromCookie(req, res){
+//     try{
+//     if (!req || !req?.cookies || !req?.cookies["connect.sid"]){
+//         res.json({ttl: 0});
+//     }
+//     else{
+//         return req?.cookies["connect.sid"].match(':.*[.]')[0].slice(1,-1);
+//     }
+// }
+//     catch{
+//         console.log("error getting session ID from cookie " + req)
+//     }
+// }
 
 exports.getTTL = getTTL;
