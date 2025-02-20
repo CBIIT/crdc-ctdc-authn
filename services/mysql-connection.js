@@ -16,7 +16,7 @@ const getTTL = (req, res) => {
         const sessionID = getSessionIDFromCookie(req, res);
         if (err) {
             console.log(err);
-            response = {ttl: null, error: "Could not establish a connection to the session database, see logs for details"};
+            console.log( "An error occurred while querying the database, see logs for details");
             return;
         }
         else if (sessionID !== null){
@@ -25,23 +25,27 @@ const getTTL = (req, res) => {
                 if (err){
                     console.log(err);
                     console.log( "An error occurred while querying the database, see logs for details");
-                    response = {ttl: null, error: "An error occurred while querying the database, see logs for details"};
+
+                    return;
                 }
                 else if (!rows || !rows[0] || !rows[0].expires){
                     response = {ttl: 0};
+
+                    return;
                 }
                 else{
                     let expires = rows[0].expires;
                     let dt = new Date(expires * 1000);
                     let ttl = Math.round((dt.valueOf() - Date.now())/1000);
                     response = {ttl: ttl};
+
+                    return;
                 }
-                res.json(response);
+
             });
         }
         else {
-            response = {ttl: null, error: "An internal server error occurred, please contact the administrators"};
-            res.json(response);
+            console.log("An internal server error occurred, please contact the administrators");
         }
         currentConnection.release();
     });
