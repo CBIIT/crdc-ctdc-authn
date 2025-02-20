@@ -24,6 +24,7 @@ const getTTL = (req, res) => {
                 let response;
                 if (err){
                     console.log(err);
+                    console.log( "An error occurred while querying the database, see logs for details");
                     response = {ttl: null, error: "An error occurred while querying the database, see logs for details"};
                 }
                 else if (!rows || !rows[0] || !rows[0].expires){
@@ -39,7 +40,8 @@ const getTTL = (req, res) => {
             });
         }
         else {
-            res.json({ttl: null, error: "An internal server error occurred, please contact the administrators"});
+            response = {ttl: null, error: "An internal server error occurred, please contact the administrators"};
+            res.json(response);
         }
         currentConnection.release();
     });
