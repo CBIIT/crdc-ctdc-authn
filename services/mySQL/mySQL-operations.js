@@ -31,7 +31,7 @@ async function getCreateCommand(userID,eventType,userEmail,userIDP) {
         let sessionID = 1; // Example sessionID
         if (sessionID !== null) {
             const rows = await new Promise((resolve, reject) => {
-                currentConnection.query("INSERT INTO ctdc.loginTable (userID,userEmail,userIDP,timestamp) VALUES ('" + userID + "','" + userEmail + "', '" + userIDP + "', TIMESTAMP(NOW())) ON DUPLICATE KEY UPDATE timestamp = TIMESTAMP(NOW()); INSERT INTO ctdc.eventTable (eventID,userID,timestamp,eventType) VALUES (NULL ,'" + userID + "' ,TIMESTAMP(NOW()), '" + eventType + "');", (err, rows) => {
+                currentConnection.query(" INSERT INTO ctdc.eventTable (eventID,userID,timestamp,eventType) VALUES (NULL ,'" + userID + "' ,TIMESTAMP(NOW()), '" + eventType + "');", (err, rows) => {
                     if (err) reject(err);
                     else resolve(rows);
                 });
@@ -130,7 +130,7 @@ async function clearEventsBeforeTimestamp() {
     if (sessionID !== null) {
         const rows = await new Promise((resolve, reject) => {
             
-            currentConnection.query("DELETE FROM ctdc.eventTable WHERE timestamp < TIMESTAMP(NOW());DELETE FROM ctdc.loginTable WHERE timestamp < TIMESTAMP(NOW())", (err, rows) => {
+            currentConnection.query("DELETE FROM ctdc.eventTable WHERE timestamp < TIMESTAMP(NOW());", (err, rows) => {
                 if (err) reject(err);
                 else resolve(rows);
             });
