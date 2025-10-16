@@ -2,6 +2,7 @@ FROM node:20.11.1-alpine3.19 AS fnl_base_image
 ENV PORT 8082
 ENV NODE_ENV production
 WORKDIR /usr/src/app
+RUN apk update && apk upgrade --no-cache openssl libcrypto3 libssl3
 COPY package*.json ./
 RUN npm ci --only=production
 COPY  --chown=node:node . .
