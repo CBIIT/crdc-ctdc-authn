@@ -12,8 +12,5 @@ RUN npm ci --only=production
 # Copy application files
 COPY  --chown=node:node . .
 
-# Pull git submodules
-RUN git submodule update --init --recursive
-
 EXPOSE 8082
 CMD [ "node", "./bin/www" ]
