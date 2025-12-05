@@ -8,7 +8,13 @@ const connection = mysql.createPool({
     password: config.mysql_password,
     database: config.mysql_database,
     insecureAuth : false,
-    multipleStatements: true
+    multipleStatements: true,
+    connectTimeout: 60000, // 60 seconds
+    acquireTimeout: 60000, // 60 seconds
+    timeout: 60000, // 60 seconds
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
 
