@@ -32,13 +32,14 @@ const { NIH, LOGIN_GOV, GOOGLE } = require("../constants/idp-constants");
 describe("GET /auth test", () => {
   const LOGOUT_ROUTE = "/api/auth/logout";
   const LOGIN_ROUTE = "/api/auth/login";
-  const mockLoginResult = {
+
+  const createMockLoginResult = (idp) => ({
     name: "Test",
     lastName: "User",
     tokens: "token123",
     email: "test@example.com",
-    idp: "nih",
-  };
+    idp: idp,
+  });
 
   beforeAll(() => {
     // Mock event service methods
@@ -62,7 +63,9 @@ describe("GET /auth test", () => {
 
   test(`auth nih login called once`, async () => {
     const nihClient = require("../idps/nih");
-    nihClient.login.mockReturnValue(Promise.resolve(mockLoginResult));
+    nihClient.login.mockReturnValue(
+      Promise.resolve(createMockLoginResult(NIH))
+    );
     await request(app)
       .post(LOGIN_ROUTE)
       .send({ code: "code", IDP: NIH })
@@ -72,7 +75,9 @@ describe("GET /auth test", () => {
 
   test(`auth google login called once`, async () => {
     const googleClient = require("../idps/google");
-    googleClient.login.mockReturnValue(Promise.resolve(mockLoginResult));
+    googleClient.login.mockReturnValue(
+      Promise.resolve(createMockLoginResult(GOOGLE))
+    );
     await request(app)
       .post(LOGIN_ROUTE)
       .send({ code: "code", IDP: GOOGLE })
@@ -81,8 +86,11 @@ describe("GET /auth test", () => {
   }, 10000);
 
   test(`auth login.gov login called once`, async () => {
+    // login.gov uses the NIH client in the implementation
     const nihClient = require("../idps/nih");
-    nihClient.login.mockReturnValue(Promise.resolve(mockLoginResult));
+    nihClient.login.mockReturnValue(
+      Promise.resolve(createMockLoginResult(LOGIN_GOV))
+    );
     await request(app)
       .post(LOGIN_ROUTE)
       .send({ code: "code", IDP: LOGIN_GOV })
