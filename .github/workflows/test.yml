@@ -30,6 +30,15 @@ jobs:
         run: npm install
 
       - name: Run Tests
+        env:
+          DATABASE_TYPE: mysql
+          MYSQL_HOST: localhost
+          MYSQL_PORT: 3306
+          MYSQL_USER: test
+          MYSQL_PASSWORD: test
+          MYSQL_DATABASE: test
+          COOKIE_SECRET: test-secret
+          TOKEN_SECRET: test-token-secret
         run: npm run test:ci
 
       # Upload test coverage reports to Coveralls
