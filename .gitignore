@@ -6,3 +6,6 @@ logs/
 yaml/
 newrelic_agent.log
 .env
+/coverage
+.vscode/
+.DS_Store
