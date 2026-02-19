@@ -25,6 +25,13 @@ var authRouter = require('./routes/auth');
 var app = express();
 app.use(cors());
 
+app.use((req, res, next) => {
+  req.reqId = req.headers['x-request-id'] || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  res.setHeader('x-request-id', req.reqId);
+  next();
+});
+
+
 // setup the logger
 app.use(logger('combined', { stream: accessLogStream }))
 app.use(express.json());
