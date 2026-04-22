@@ -112,6 +112,7 @@ async function getEventAfterTimestamp(timestamp,eventType) {
         currentConnection.release(); // Ensure connection is released
     }
     
+
 }
 }
 
@@ -251,6 +252,8 @@ async function getLastLogin() {
     
 }
 
+}
+
 async function upsertUserPassportJWT({ email, idp, passportJWT }) {
     let currentConnection = null;
     try {
@@ -299,13 +302,87 @@ async function upsertUserPassportJWT({ email, idp, passportJWT }) {
         }
     }
 }
+
+async function getSessionTokens(sessionId) {
+    let currentConnection = null;
+    try {
+        currentConnection = await new Promise((resolve, reject) => {
+            connection.getConnection((err, conn) => {
+                if (err) reject(err);
+                else resolve(conn);
+            });
+        });
+
+        return await new Promise((resolve, reject) => {
+            const query = `SELECT data FROM sessions WHERE session_id = ?`;
+            currentConnection.query(query, [sessionId], (err, rows) => {
+                if (err) reject(err);
+                else {
+                    if (!rows || rows.length === 0) {
+                        resolve(null);
+                    } else {
+                        try {
+                            const sessionData = JSON.parse(rows[0].data);
+                            resolve(sessionData && sessionData.tokens ? sessionData.tokens : null);
+                        } catch (parseErr) {
+                            reject(new Error(`Failed to parse session data: ${parseErr.message}`));
+                        }
+                    }
+                }
+            });
+        });
+    } catch (error) {
+        logger.error(`getSessionTokens error: ${error.message}`);
+        return null;
+    } finally {
+        if (currentConnection) {
+            currentConnection.release();
+        }
+    }
 }
 
+async function updateSessionTokens(sessionId, tokens) {
+    let currentConnection = null;
+    try {
+        currentConnection = await new Promise((resolve, reject) => {
+            connection.getConnection((err, conn) => {
+                if (err) reject(err);
+                else resolve(conn);
+            });
+        });
 
-    
+        return await new Promise((resolve, reject) => {
+            const query = `UPDATE sessions SET data = JSON_SET(data, '$.tokens', JSON_OBJECT(
+                'accessToken', ?,
+                'refreshToken', ?,
+                'idToken', ?,
+                'tokenType', ?,
+                'scope', ?,
+                'expiresAt', ?
+            )) WHERE session_id = ?`;
 
-
-
+            currentConnection.query(query, [
+                tokens.accessToken,
+                tokens.refreshToken,
+                tokens.idToken,
+                tokens.tokenType,
+                tokens.scope,
+                tokens.expiresAt,
+                sessionId
+            ], (err) => {
+                if (err) reject(err);
+                else resolve(true);
+            });
+        });
+    } catch (error) {
+        logger.error(`updateSessionTokens error: ${error.message}`);
+        return false;
+    } finally {
+        if (currentConnection) {
+            currentConnection.release();
+        }
+    }
+}
 
 module.exports = {
     getCreateCommand,
@@ -314,6 +391,8 @@ module.exports = {
     getLastLogin,
     // getEventAfterTimestamp,
     clearEventsBeforeTimestamp,
-    upsertUserPassportJWT
+    upsertUserPassportJWT,
+    getSessionTokens,
+    updateSessionTokens
     // getEventsAfterTimestamp
 }

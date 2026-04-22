@@ -12,6 +12,7 @@ const {UserService} = require("../services/user-service");
 const {CleaningService} = require("../services/clean-events.js")
 const { checkTokenAndClean } = require("../services/clean-events.js")
 const mySQLOps = require("../services/mySQL/mySQL-operations.js");
+const { refreshRASTokenBundle, rasUserInfo, validateRASPassport } = require("../services/ras-auth");
 
 let eventService = null;
 let cleaningService = null;
@@ -50,7 +51,8 @@ router.post('/login', async function (req, res) {
             IDP: idp,
             firstName: name,
             lastName: lastName,
-            tokens: tokens
+            tokens: tokens,
+            passport: passportJWT
         };
         req.session.userInfo = formatVariables(req.session.userInfo, ["IDP"], formatMap);
        
@@ -135,6 +137,84 @@ router.post('/authenticated', async function (req, res) {
     } catch (e) {
         logger.error(`Authentication check failed: ${e.message}`);
         res.status(500).json({errors: e});
+    }
+});
+
+/* Refresh Token */
+// Refresh RAS tokens using refresh token from session
+router.post('/refresh', async function (req, res) {
+    logger.debug(`[${req.method}] ${req.path} - Token refresh attempt`);
+    try {
+        const sessionId = req.body?.session_id || req.sessionID;
+        
+        if (!sessionId) {
+            logger.warn('Token refresh: no session_id provided');
+            return res.status(400).json({ error: 'session_id is required' });
+        }
+
+        // Get current tokens from session
+        let tokens = req.session?.tokens;
+        
+        // If not in current session, try to fetch from database
+        if (!tokens) {
+            tokens = await mySQLOps.getSessionTokens(sessionId);
+        }
+        
+        if (!tokens || !tokens.refreshToken) {
+            logger.warn(`Token refresh: no refresh token found for session ${sessionId}`);
+            return res.status(401).json({ error: 'No refresh token available' });
+        }
+
+        logger.info(`Token refresh initiated for session: ${sessionId}`);
+
+        // Refresh the token bundle
+        const newTokens = await refreshRASTokenBundle(tokens.refreshToken);
+        logger.debug('Token refresh successful from RAS');
+
+        // Get user info with new access token
+        const userInfo = await rasUserInfo(newTokens.accessToken);
+        const passportJWT = userInfo?.passport_jwt_v11;
+
+        // Validate passport
+        const isValid = await validateRASPassport(passportJWT);
+        if (!isValid) {
+            logger.warn('Token refresh: passport validation failed');
+            return res.status(401).json({ error: 'Passport validation failed' });
+        }
+
+        // Update session tokens in memory
+        if (req.session) {
+            req.session.tokens = newTokens;
+        }
+        
+        // Update tokens in database
+        const updateSuccess = await mySQLOps.updateSessionTokens(sessionId, newTokens);
+        if (!updateSuccess) {
+            logger.error(`Token refresh: failed to update session ${sessionId} in database`);
+            return res.status(500).json({ error: 'Failed to persist updated tokens' });
+        }
+        
+        logger.debug(`Session tokens updated for session: ${sessionId}`);
+
+        // Update passport if user is RAS
+        if (passportJWT && req.session?.userInfo?.IDP?.toLowerCase() === 'ras') {
+            await userService.persistUserPassportJWT({
+                email: req.session.userInfo.email,
+                IDP: req.session.userInfo.IDP,
+                passportJWT
+            });
+            logger.debug(`Passport updated for user: ${req.session.userInfo.email}`);
+        }
+
+        logger.info(`Token refresh successful for session: ${sessionId}`);
+        res.status(200).json({
+            status: 'success',
+            email: req.session.userInfo?.email,
+            expires_at: newTokens.expiresAt
+        });
+    } catch (e) {
+        logger.error(`Token refresh failed: ${e.message}`);
+        res.status(500).json({ error: e.message });
     }
 });
 
