@@ -31,7 +31,6 @@ async function getCreateCommand(userID,eventType,userEmail,userIDP) {
 
     }); 
    
-
         // let sessionID = getSessionIDFromCookie(req, res);
         let sessionID = 1; // Example sessionID
         if (sessionID !== null) {
@@ -251,6 +250,55 @@ async function getLastLogin() {
     }
     
 }
+
+async function upsertUserPassportJWT({ email, idp, passportJWT }) {
+    let currentConnection = null;
+    try {
+        currentConnection = await new Promise((resolve, reject) => {
+            connection.getConnection((err, conn) => {
+                if (err) reject(err);
+                else resolve(conn);
+            });
+        });
+
+        const createTableSQL = `
+            CREATE TABLE IF NOT EXISTS ctdc.user_passports (
+                email VARCHAR(320) NOT NULL,
+                idp VARCHAR(64) NOT NULL,
+                passport_jwt_v11 LONGTEXT NOT NULL,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (email, idp)
+            )`;
+
+        await new Promise((resolve, reject) => {
+            currentConnection.query(createTableSQL, (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+
+        const upsertSQL = `
+            INSERT INTO ctdc.user_passports (email, idp, passport_jwt_v11)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE passport_jwt_v11 = VALUES(passport_jwt_v11)`;
+
+        await new Promise((resolve, reject) => {
+            currentConnection.query(upsertSQL, [email, idp, passportJWT], (err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        });
+
+        return true;
+    } catch (error) {
+        logger.error(`upsertUserPassportJWT error: ${error.message}`);
+        return false;
+    } finally {
+        if (currentConnection) {
+            currentConnection.release();
+        }
+    }
+}
 }
 
 
@@ -265,6 +313,7 @@ module.exports = {
     compareSessionID,
     getLastLogin,
     // getEventAfterTimestamp,
-    clearEventsBeforeTimestamp
+    clearEventsBeforeTimestamp,
+    upsertUserPassportJWT
     // getEventsAfterTimestamp
 }

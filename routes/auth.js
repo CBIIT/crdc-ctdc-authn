@@ -8,11 +8,10 @@ const {formatVariables, formatMap} = require("../bento-event-logging/const/forma
 const {TokenService} = require("../services/token-service");
 const {AuthenticationService} = require("../services/authenticatation-service");
 const {EventService} = require("../neo4j/event-service");
-const {Neo4jDriver} = require("../neo4j/neo4j");
-const {Neo4jService} = require("../neo4j/neo4j-service");
 const {UserService} = require("../services/user-service");
 const {CleaningService} = require("../services/clean-events.js")
 const { checkTokenAndClean } = require("../services/clean-events.js")
+const mySQLOps = require("../services/mySQL/mySQL-operations.js");
 
 let eventService = null;
 let cleaningService = null;
@@ -30,7 +29,7 @@ if (config.database_type.toUpperCase() == 'MYSQL') {
 
     eventService = new EventService(connectionParams);
     cleaningService = new CleaningService(config.token_secret);
-    userService = new UserService(connectionParams);
+    userService = new UserService(mySQLOps);
     tokenService = new TokenService(config.token_secret,userService);
     authService = new AuthenticationService(tokenService, userService);
 }
@@ -45,7 +44,7 @@ router.post('/login', async function (req, res) {
     try {
         logger.info('Processing login request');
         const reqIDP = config.getIdpOrDefault(req.body['IDP']);
-        const { name, lastName, tokens, email, idp } = await idpClient.login(req.body['code'], reqIDP, config.getUrlOrDefault(reqIDP, req.body['redirectUri']));
+        const { name, lastName, tokens, email, idp, passportJWT } = await idpClient.login(req.body['code'], reqIDP, config.getUrlOrDefault(reqIDP, req.body['redirectUri']));
         req.session.userInfo = {
             email: email,
             IDP: idp,
@@ -66,6 +65,15 @@ router.post('/login', async function (req, res) {
         catch (err){
             logger.error(`Failed to store login event: ${err.message}`);
         }
+
+        if (passportJWT && typeof idp === 'string' && idp.toLowerCase() === 'ras') {
+            await userService.persistUserPassportJWT({
+                email,
+                IDP: idp,
+                passportJWT
+            });
+        }
+
         req.session.tokens = tokens;
         res.json({name, email, "timeout": config.session_timeout / 1000});
     } catch (e) {
@@ -104,7 +112,24 @@ router.post('/logout', async function (req, res, next) {
 router.post('/authenticated', async function (req, res) {
     logger.debug(`[${req.method}] ${req.path} - Checking authentication status`);
     try {
-        const isAuthenticated = Boolean(req?.session?.tokens);
+        if (!req?.session?.userInfo || !req?.session?.tokens) {
+            logger.info('Authentication check: false');
+            return res.status(200).send({ status : false });
+        }
+
+        const authResult = await idpClient.authenticated(req.session.userInfo, req.session.tokens);
+        const isAuthenticated = typeof authResult === 'object'
+            ? Boolean(authResult.isAuthenticated)
+            : Boolean(authResult);
+
+        if (typeof authResult === 'object' && authResult.tokens) {
+            req.session.tokens = authResult.tokens;
+        }
+
+        if (!isAuthenticated) {
+            req.session.tokens = null;
+        }
+
         logger.info(`Authentication check: ${isAuthenticated}`);
         res.status(200).send({ status : isAuthenticated });
     } catch (e) {

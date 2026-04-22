@@ -1,9 +1,10 @@
 const app = require('../app');
 const request = require('supertest');
-const {NIH, LOGIN_GOV, GOOGLE} = require("../constants/idp-constants");
+const {NIH, LOGIN_GOV, GOOGLE, RAS} = require("../constants/idp-constants");
 const nihClient = require("../idps/nih");
 jest.mock("../idps/nih");
 jest.mock("../idps/google");
+jest.mock("../idps/ras");
 jest.mock("../services/nih-auth");
 describe('GET /auth test', ()=> {
     const LOGOUT_ROUTE = '/api/auth/logout';
@@ -62,5 +63,15 @@ describe('GET /auth test', ()=> {
             .send({IDP: LOGIN_GOV})
             .expect(200);
         expect(nihClient.logout).toBeCalledTimes(1);
+    });
+
+    test(`auth ras login called once`, async () => {
+        const rasClient = require('../idps/ras');
+        rasClient.login.mockReturnValue(Promise.resolve(mockLoginResult));
+        await request(app)
+            .post(LOGIN_ROUTE)
+            .send({code: 'code', IDP: RAS})
+            .expect(200);
+        expect(rasClient.login).toBeCalledTimes(1);
     });
 });

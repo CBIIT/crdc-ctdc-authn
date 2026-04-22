@@ -84,6 +84,7 @@ Notes:
 - `refreshToken` is treated as an opaque secret string.
 - `expiresAt` is derived from `expires_in` with a small skew subtracted for internal checks.
 - `idToken` is retained only if needed for downstream claims or audit context.
+- The `passport_jwt_v11` value returned from the userinfo endpoint is not part of the browser session token bundle; it must also be persisted in the database for downstream authorization and audit needs.
 
 ## Login Flow
 
@@ -94,7 +95,7 @@ Notes:
 5. RAS calls the userinfo endpoint with the access token.
 6. RAS extracts identity fields and passport material from the userinfo response.
 7. RAS calls the validation endpoint for passport validation.
-8. If validation succeeds with `Valid`, the route stores the user and token bundle in session.
+8. If validation succeeds with `Valid`, the system persists the `passport_jwt_v11` value from the userinfo response in the database and the route stores the user and token bundle in session.
 9. If validation fails, login fails closed and the session is not established.
 
 ## Authenticated Request Flow
@@ -113,6 +114,7 @@ Notes:
 - Use the access token for bearer-protected API calls.
 - Do not use the `id_token` as a bearer token.
 - Treat the `passport_jwt_v11` value from userinfo as the authoritative passport material to validate.
+- Persist the `passport_jwt_v11` value from userinfo in the database after successful validation.
 - Require the validation endpoint to return `Valid` before granting protected access.
 - Enforce exactly one refresh attempt per request path to avoid loops.
 
@@ -138,6 +140,7 @@ Notes:
 
 - Never log raw `access_token`, `refresh_token`, `id_token`, or full passport JWT values.
 - If token-related logging is required, log only non-secret metadata such as issuer, scope, token expiry, or truncated identifiers.
+- Protect the persisted `passport_jwt_v11` value in the database as sensitive credential material.
 - Protect session storage appropriately if it persists beyond in-memory sessions.
 - Verify expected scopes, including `openid` and `ga4gh_passport_v1`.
 - Confirm token issuer and audience against configured RAS client expectations where validation logic supports it.
@@ -152,6 +155,7 @@ Add unit coverage for the RAS service module to verify:
 - authorization-code token exchange parsing
 - refresh-token exchange parsing
 - userinfo parsing and extraction of identity and passport fields
+- persistence of `passport_jwt_v11` after successful validation
 - validation success and validation failure behavior
 - invalid-grant, invalid-token, timeout, and network-error branches
 
@@ -170,6 +174,7 @@ Add route or integration coverage for:
 
 - login callback with `IDP=ras`
 - session persistence of the structured RAS token bundle
+- database persistence of `passport_jwt_v11` from the userinfo response
 - authenticated route success with valid RAS session
 - authenticated route recovery through refresh after expired access token
 - authenticated route failure after refresh failure

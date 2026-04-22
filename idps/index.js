@@ -1,9 +1,10 @@
 const googleClient = require('./google');
 const nihClient = require('./nih');
 const dcfClient = require('./dcf');
+const rasClient = require('./ras');
 const testIDP = require('./testIDP');
 const {isCaseInsensitiveEqual} = require("../util/string-util");
-const {NIH, GOOGLE, LOGIN_GOV, TEST, DCF} = require("../constants/idp-constants");
+const {NIH, GOOGLE, LOGIN_GOV, TEST, DCF, RAS} = require("../constants/idp-constants");
 
 const oauth2Client = {
     login: async (code, idp, redirectingURL) => {
@@ -19,6 +20,9 @@ const oauth2Client = {
 
          case isCaseInsensitiveEqual(idp, DCF):
             return dcfClient.login(code, redirectingURL);
+
+          case isCaseInsensitiveEqual(idp, RAS):
+            return rasClient.login(code, redirectingURL);
          
           default:
             return testIDP.login(code);
@@ -31,6 +35,8 @@ const oauth2Client = {
             return await googleClient.authenticated(tokens);
         } else if (isCaseInsensitiveEqual(userSession.idp,NIH)) {
             return await nihClient.authenticated(tokens);
+        } else if (isCaseInsensitiveEqual(userSession.idp,RAS)) {
+          return await rasClient.authenticated(tokens);
         }
         return false;
     },
