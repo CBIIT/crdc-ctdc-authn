@@ -16,8 +16,7 @@ graph TB
     
     AuthServer -->|OAuth/OIDC| IDPs["Identity Providers<br/>(Google, NIH, DCF)"]
     AuthServer -->|Session Store| MySQLSession["MySQL<br/>Session Store"]
-    AuthServer -->|Event Log| Neo4j["Neo4j<br/>Event Database"]
-    AuthServer -->|User Info| MySQLUserDB["MySQL<br/>User Database"]
+    AuthServer -->|Event Log + User Data| MySQLUserDB["MySQL<br/>Application Database"]
     
     IDPs -->|ID/Access Tokens| AuthServer
     
@@ -40,7 +39,7 @@ graph TB
 
 - **Runtime**: Node.js + Express.js `^4.18.2`
 - **Session Store**: MySQL + `express-mysql-session`
-- **Event Log**: Neo4j `^5.5.0` (alternative to MySQL events)
+- **Application Data and Event Log**: MySQL
 - **Token**: JWT (`jsonwebtoken ^9.0.0`)
 - **OAuth Clients**: `googleapis ^95.0.0` for Google; custom NIH/DCF clients
 - **Monitoring**: NewRelic APM `^7.3.1`
@@ -48,11 +47,13 @@ graph TB
 
 ## Key Deployment Constraints
 
-- **Database Type**: Configurable at startup via `DATABASE_TYPE` env var (MySQL or Neo4j)
+- **Database Type**: Current startup path requires `DATABASE_TYPE=MYSQL`
 - **Session Timeout**: Configurable (default: 30 minutes)
 - **Default IDP**: Configurable (default: Google)
 - **Token Secret**: Required for JWT signing and verification
 - **Multi-IDP Support**: Simultaneously supports Google, NIH, DCF, Fence, and test IDP
+
+The repository still contains Neo4j-related modules and environment variables, but the active route initialization in `routes/auth.js` only accepts `MYSQL` and throws for any other database type.
 
 ## Supported Endpoints
 
@@ -68,10 +69,10 @@ graph TB
 
 | Decision | Rationale |
 |----------|-----------|
-| Dual DB support (MySQL + Neo4j) | Allows flexible deployment and event storage strategy |
+| MySQL-backed runtime path | The active route initialization only constructs services when `DATABASE_TYPE` is `MYSQL` |
 | JWT tokens | Stateless, scalable token validation without central store lookup |
-| Session store in MySQL | Faster reads than Neo4j for session-heavy workloads |
-| Event log in Neo4j | Graph model supports complex audit queries (e.g., user activity timelines) |
+| Session store in MySQL | Sessions are persisted through MySQL-backed middleware |
+| Event log in MySQL | Login/logout events are written through `services/mySQL/mySQL-operations.js` in the current implementation |
 | Multiple IDPs | Different institutions use different auth systems (NIH, Google, DCF) |
 
 ## Deployment Model
@@ -84,7 +85,8 @@ graph TB
 ## Confidence Notes
 
 - **Observed**: App structure, entry point, core routes, service layer
-- **Inferred**: Event logging strategy based on config flags and Neo4j operations
+- **Observed**: Current runtime path uses MySQL for sessions and event writes; `routes/auth.js` rejects non-MySQL `DATABASE_TYPE` values
+- **Observed**: Neo4j modules and config fields remain in the repository but are not part of the active startup path
 - **Unknown**: Exact IDP-specific error handling; DCF client behavior (not inspected)
 
 ---
