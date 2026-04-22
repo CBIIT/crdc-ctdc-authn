@@ -1,6 +1,7 @@
 const nodeFetch = require('node-fetch');
 const mysql = require('mysql');
 const config = require('../../config');
+const logger = require('winston');
 
 const connection = mysql.createPool({
     host: config.mysql_host,
@@ -23,7 +24,7 @@ async function getCreateCommand(userID,eventType,userEmail,userIDP) {
     try {
     const currentConnection = await new Promise((resolve, reject) => {
         connection.getConnection((err, connection) => {
-            if (err){console.log("line 18 results " +  err);reject(err);} 
+            if (err){logger.error(`DB connection error: ${err.message}`);reject(err);} 
             
             else resolve(connection);
         });
@@ -41,7 +42,7 @@ async function getCreateCommand(userID,eventType,userEmail,userIDP) {
                 });
             });
             if (!rows || !rows[0] || !rows[0].data) {
-                console.log("Create Command Runs");
+                logger.debug('Create command executed, no data rows returned');
                 currentConnection.release()
                 return -1; // or handle accordingly
             } else {
@@ -50,12 +51,12 @@ async function getCreateCommand(userID,eventType,userEmail,userIDP) {
                 return output;
             }
         } else {
-            console.log("An internal server error occurred, please contact the administrators");
+            logger.error('getCreateCommand: session ID is null, internal server error');
             currentConnection.release()
             return -1;
         }
     } catch (error) {
-        console.log("Error: ", error.message);
+        logger.error(`getCreateCommand error: ${error.message}`);
         currentConnection.release()
         return -1;
     } finally {
@@ -89,10 +90,7 @@ async function getEventAfterTimestamp(timestamp,eventType) {
         });
         let json_rows =  await rows
         if (!rows || !rows[0]) {
-            
-            console.log("Session expires");
-            
-            console.log(rows[0]);
+            logger.debug('getEventAfterTimestamp: no rows found, session may have expired');
             currentConnection.release();
             return -1 // or handle accordingly
         } else {
@@ -102,12 +100,12 @@ async function getEventAfterTimestamp(timestamp,eventType) {
 
         }
     } else {
-        console.log("An internal server error occurred, please contact the administrators");
+        logger.error('getEventAfterTimestamp: session ID is null, internal server error');
         currentConnection.release();
         return -1;
     }
 } catch (error) {
-    console.log("Error: ", error.message);
+    logger.error(`getEventAfterTimestamp error: ${error.message}`);
     currentConnection.release();
     return -1;
 } finally {
@@ -141,7 +139,7 @@ async function clearEventsBeforeTimestamp() {
         });
 
         if (!rows || !rows[0] || !rows[0].data) {
-            console.log("Session expires");
+            logger.debug('clearEventsBeforeTimestamp: no rows returned');
             currentConnection.release();
             return -1; // or handle accordingly
         } else {
@@ -150,11 +148,11 @@ async function clearEventsBeforeTimestamp() {
             return output;
         }
     } else {
-        console.log("An internal server error occurred, please contact the administrators");
+        logger.error('clearEventsBeforeTimestamp: session ID is null, internal server error');
         return -1;
     }
 } catch (error) {
-    console.log("Error: ", error.message);
+    logger.error(`clearEventsBeforeTimestamp error: ${error.message}`);
     currentConnection.release();
     return -1;
 } finally {
@@ -186,7 +184,7 @@ async function compareSessionID(sessionID) {
         });
 
         if (!rows || !rows[0]) {
-            console.log("Session expires");
+            logger.debug('compareSessionID: session not found or expired');
             currentConnection.release();
             return -1; // or handle accordingly
         } else {
@@ -195,11 +193,11 @@ async function compareSessionID(sessionID) {
                return output;
         }
     } else {
-        console.log("An internal server error occurred, please contact the administrators");
+        logger.error('compareSessionID: session ID is null, internal server error');
         return -1;
     }
 } catch (error) {
-    console.log("Error: ", error.message);
+    logger.error(`compareSessionID error: ${error.message}`);
     currentConnection.release();
     return -1;
 } finally {
@@ -230,7 +228,7 @@ async function getLastLogin() {
         });
 
         if (!rows || !rows[0]) {
-            console.log("Session expires");
+            logger.debug('getLastLogin: no login events found');
             currentConnection.release();
             return -1; // or handle accordingly
         } else {
@@ -239,12 +237,12 @@ async function getLastLogin() {
                return output;
         }
     } else {
-        console.log("An internal server error occurred, please contact the administrators");
+        logger.error('getLastLogin: connection is null, internal server error');
         currentConnection.release();
         return -1;
     }
 } catch (error) {
-    console.log("Error: ", error.message);
+    logger.error(`getLastLogin error: ${error.message}`);
     currentConnection.release();
     return -1;
 } finally {

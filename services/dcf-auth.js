@@ -1,5 +1,6 @@
 const nodeFetch = require("node-fetch");
 const config = require("../config");
+const logger = require('winston');
 
 const validateResponseOrThrow= (res)=> {
     if (res.status != 200) throw new Error("eRA Commons access token failed to create because of invalid access code or unauthorized access");
@@ -8,7 +9,7 @@ const validateResponseOrThrow= (res)=> {
 const client = config.DCF;
 
 async function getDCFToken(code, redirectURi) {
-    console.log("getDCFToken")
+    logger.debug('Requesting DCF token');
     const response = await nodeFetch(client.TOKEN_URL, {
         method: 'POST',
         headers: {
@@ -25,12 +26,12 @@ async function getDCFToken(code, redirectURi) {
     });
     const jsonResponse = await response.json();
     validateResponseOrThrow(response);
-    console.log(jsonResponse.access_token)
+    logger.info('DCF access token received');
     return jsonResponse.access_token;
 }
 
 async function dcfLogout(tokens) {
-    console.log("dcfLogout")
+    logger.debug('Initiating DCF logout');
 
     const result = await nodeFetch(client.LOGOUT_URL, {
         method: 'GET',
@@ -48,7 +49,7 @@ async function dcfLogout(tokens) {
 
 
 async function dcfUserInfo(accessToken) {
-    console.log("dcfUserInfo")
+    logger.debug('Fetching DCF user info');
     const result = await nodeFetch(client.USERINFO_URL, {
         method: 'GET',
         headers: {
