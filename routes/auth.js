@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const logger = require('winston');
 const idpClient = require('../idps');
 const config = require('../config');
 const {logout} = require('../controllers/auth-api')
@@ -26,22 +27,12 @@ if (config.database_type.toUpperCase() == 'MYSQL') {
             url: config.mysql_host,
             database: config.mysql_database
     }
-    console.log('Database type SQL ')
-    eventService = new EventService(connectionParams);
-    
 
+    eventService = new EventService(connectionParams);
     cleaningService = new CleaningService(config.token_secret);
     userService = new UserService(connectionParams);
     tokenService = new TokenService(config.token_secret,userService);
     authService = new AuthenticationService(tokenService, userService);
-}
-else if (config.database_type.toUpperCase() == 'NEO4J'){
-    console.log('Database type NEO4J ')
-    //services
-    const neo4j = new Neo4jDriver(config.neo4j_uri, config.neo4j_user, config.neo4j_password);
-    const neo4jService = new Neo4jService(neo4j);
-
-
 }
 else {
     throw new Error("Invalid database_type")
@@ -50,8 +41,9 @@ else {
 /* Login */
 /* Granting an authenticated token */
 router.post('/login', async function (req, res) {
-
+    logger.debug(`[${req.method}] ${req.path} - Login attempt with IDP: ${req.body['IDP']}`);
     try {
+        logger.info('Processing login request');
         const reqIDP = config.getIdpOrDefault(req.body['IDP']);
         const { name, lastName, tokens, email, idp } = await idpClient.login(req.body['code'], reqIDP, config.getUrlOrDefault(reqIDP, req.body['redirectUri']));
         req.session.userInfo = {
@@ -62,51 +54,45 @@ router.post('/login', async function (req, res) {
             tokens: tokens
         };
         req.session.userInfo = formatVariables(req.session.userInfo, ["IDP"], formatMap);
-        // we do not need userInfo in neo4j
+       
         try{
             if (!req.session?.userInfo || !req.session.userInfo?.firstName){
-                console.log("userInfo is " + req.session.userInfo?.firstName) 
+                logger.warn("Login: userInfo missing or firstName not set"); 
                 return 
             }
             await eventService.storeLoginEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
-            
+            logger.info(`Login successful for user: ${email}`);
         }   
         catch (err){
-            console.log(err);
+            logger.error(`Failed to store login event: ${err.message}`);
         }
         req.session.tokens = tokens;
         res.json({name, email, "timeout": config.session_timeout / 1000});
     } catch (e) {
-        if (e.code && parseInt(e.code)) {
-            res.status(parseInt(e.code));
-        } else if (e.statusCode && parseInt(e.statusCode)) {
-            res.status(parseInt(e.statusCode));
-        } else {
-            res.status(500);
-        }
+        const statusCode = e.code && parseInt(e.code) ? parseInt(e.code) : (e.statusCode && parseInt(e.statusCode) ? parseInt(e.statusCode) : 500);
+        logger.error(`Login failed with status ${statusCode}: ${e.message}`);
+        res.status(statusCode);
         res.json({error: e.message});
     }
 });
 
 /* Logout */
 router.post('/logout', async function (req, res, next) {
-    
-
-    
+    logger.debug(`[${req.method}] ${req.path} - Logout attempt with IDP: ${req.body['IDP']}`);
     try {
-        console.log("logout")
-         console.log(req.body['IDP'])
+        logger.info('Processing logout request');
         const idp = config.getIdpOrDefault(req.body['IDP']);
         await idpClient.logout(idp, req.session.tokens);
         if (!req.session?.userInfo){
-            console.log("userInfo is " + req.session?.userInfo) 
+            logger.warn("Logout: userInfo not found in session"); 
             return logout(req, res);
         }
         await eventService.storeLogoutEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
+        logger.info(`Logout successful for user: ${req.session.userInfo.email}`);
         // Remove User Session
         return logout(req, res);
          } catch (e) {
-            console.log(e);
+            logger.error(`Logout failed: ${e.message}`);
             res.status(500).json({errors: e});
         }
  
@@ -116,21 +102,27 @@ router.post('/logout', async function (req, res, next) {
 // Return {status: true} or {status: false}
 //Calling this API will refresh the session
 router.post('/authenticated', async function (req, res) {
+    logger.debug(`[${req.method}] ${req.path} - Checking authentication status`);
     try {
-
-        res.status(200).send({ status : Boolean(req?.session?.tokens) });
+        const isAuthenticated = Boolean(req?.session?.tokens);
+        logger.info(`Authentication check: ${isAuthenticated}`);
+        res.status(200).send({ status : isAuthenticated });
     } catch (e) {
-        console.log(e);
+        logger.error(`Authentication check failed: ${e.message}`);
         res.status(500).json({errors: e});
     }
 });
 
+
 router.post('/cleanUp', async function (req, res) {
+    logger.debug(`[${req.method}] ${req.path} - Cleanup tokens`);
     try {
+        logger.info('Processing token cleanup');
         let response = await checkTokenAndClean(req,res);
+        logger.info(`Cleanup status: ${response}`);
         res.status(200).send({ status : response });
     } catch (e) {
-        console.log(e);
+        logger.error(`Cleanup failed: ${e.message}`);
         res.status(500).json({errors: e});
     }
 });
