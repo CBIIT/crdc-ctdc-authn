@@ -34,6 +34,7 @@ graph TB
 4. **Token Validation**: Verifies and validates JWT tokens from client requests
 5. **Event Logging**: Records authentication events (login, logout, etc.) for auditing
 6. **User Profile Management**: Stores and retrieves user information linked to external identities
+7. **Passport Retrieval**: Returns the stored GA4GH Passport JWT for the authenticated session when available
 
 ## Technology Stack
 
@@ -61,6 +62,7 @@ The repository still contains Neo4j-related modules and environment variables, b
 - `POST /api/auth/login` — Authenticate user against configured IDP
 - `POST /api/auth/logout` — Clear session and optionally revoke IDP tokens
 - `POST /api/auth/authenticated` — Verify current session is valid
+- `GET /api/auth/passport` — Return the stored GA4GH Passport JWT for the current authenticated session
 - `POST /api/auth/refresh` — Refresh RAS tokens using refresh token from session (RAS-specific)
 - `POST /api/auth/cleanUp` — Token refresh and expired session cleanup
 - `GET /api/auth/ping` — Health check
@@ -77,6 +79,7 @@ The repository still contains Neo4j-related modules and environment variables, b
 | Event log in MySQL | Login/logout events are written through `services/mySQL/mySQL-operations.js` in the current implementation |
 | Multiple IDPs | Different institutions use different auth systems (NIH, Google, DCF, RAS) |
 | RAS Passport Persistence | GA4GH Passports from RAS are stored in `ctdc.user_passports` table for claim extraction by downstream services |
+| Session-scoped Passport Lookup | The passport retrieval route resolves the active session to `email` and `IDP`, then queries `ctdc.user_passports` without returning decoded claims or other user metadata |
 | RAS Reactive Refresh | RAS tokens use single-attempt refresh on 401 response; no retry loop to prevent refresh storms |
 
 ## Deployment Model
@@ -92,6 +95,7 @@ The repository still contains Neo4j-related modules and environment variables, b
 - **Observed**: Current runtime path uses MySQL for sessions and event writes; `routes/auth.js` rejects non-MySQL `DATABASE_TYPE` values
 - **Observed**: Neo4j modules and config fields remain in the repository but are not part of the active startup path
 - **Observed**: RAS integration (added 2026-04-22) with reactive token refresh and GA4GH Passport persistence
+- **Observed**: Passport retrieval endpoint (added 2026-04-23) uses `req.sessionID` plus MySQL-backed session data to return the stored GA4GH Passport JWT for the authenticated user
 - **Unknown**: Exact IDP-specific error handling; DCF client behavior (not inspected); Fence client behavior (not inspected)
 
 ---
