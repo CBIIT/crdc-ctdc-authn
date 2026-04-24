@@ -31,6 +31,40 @@ class UserService{
             passportJWT
         });
     }
+
+    async getPassportBySession(sessionId) {
+        if (!sessionId) {
+            return null;
+        }
+        if (typeof this.dataService.getSessionTokens !== 'function') {
+            throw new Error('Session retrieval service is not configured');
+        }
+        if (typeof this.dataService.getPassportByEmail !== 'function') {
+            throw new Error('Passport retrieval service is not configured');
+        }
+
+        try {
+            // Get session data to extract email and IDP
+            const sessionData = await this.dataService.getSessionTokens(sessionId);
+            
+            if (!sessionData || !sessionData.userInfo) {
+                return null;
+            }
+
+            const { email, IDP } = sessionData.userInfo;
+            
+            if (!email || !IDP) {
+                return null;
+            }
+
+            // Retrieve passport using email and IDP
+            const passport = await this.dataService.getPassportByEmail(email, IDP);
+            
+            return passport;
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 module.exports = {

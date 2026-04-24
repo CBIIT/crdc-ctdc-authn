@@ -384,7 +384,40 @@ async function updateSessionTokens(sessionId, tokens) {
     }
 }
 
-module.exports = {
+async function getPassportByEmail(email, idp) {
+    let currentConnection = null;
+    try {
+        currentConnection = await new Promise((resolve, reject) => {
+            connection.getConnection((err, conn) => {
+                if (err) reject(err);
+                else resolve(conn);
+            });
+        });
+
+        return await new Promise((resolve, reject) => {
+            const query = `SELECT passport_jwt_v11 FROM ctdc.user_passports WHERE email = ? AND idp = ?`;
+            currentConnection.query(query, [email, idp], (err, rows) => {
+                if (err) reject(err);
+                else {
+                    if (!rows || rows.length === 0) {
+                        resolve(null);
+                    } else {
+                        resolve(rows[0].passport_jwt_v11);
+                    }
+                }
+            });
+        });
+    } catch (error) {
+        logger.error(`getPassportByEmail error: ${error.message}`);
+        throw error;
+    } finally {
+        if (currentConnection) {
+            currentConnection.release();
+        }
+    }
+}
+
+const mySQLOps = {
     getCreateCommand,
     getEventAfterTimestamp,
     compareSessionID,
@@ -393,6 +426,9 @@ module.exports = {
     clearEventsBeforeTimestamp,
     upsertUserPassportJWT,
     getSessionTokens,
-    updateSessionTokens
+    updateSessionTokens,
+    getPassportByEmail
     // getEventsAfterTimestamp
-}
+};
+
+module.exports = { mySQLOps };

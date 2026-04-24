@@ -232,10 +232,33 @@ router.post('/cleanUp', async function (req, res) {
     }
 });
 
+/* Get Passport */
+// Returns the authenticated user's GA4GH Passport JWT
+router.get('/passport', async function (req, res) {
+    logger.debug(`[${req.method}] ${req.path} - Passport retrieval request`);
+    try {
+        // Extract session ID from Express session
+        const sessionId = req.sessionID;
+        
+        if (!sessionId) {
+            logger.info('Passport retrieval: session_id not provided');
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
 
+        // Retrieve passport using UserService
+        const passportJWT = await userService.getPassportBySession(sessionId);
 
+        if (!passportJWT) {
+            logger.debug(`Passport retrieval: passport not found for session ${sessionId}`);
+            return res.status(404).json({ error: 'Passport not found' });
+        }
 
-
-
+        logger.info(`Passport retrieval successful for session: ${sessionId}`);
+        res.status(200).json({ passportJWT });
+    } catch (error) {
+        logger.error(`Passport retrieval failed: ${error.message}`);
+        res.status(500).json({ error: 'Failed to retrieve passport' });
+    }
+});
 
 module.exports = router;
