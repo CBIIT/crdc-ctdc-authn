@@ -9,14 +9,20 @@ graph TB
     Request -->|POST /login| LoginFlow["Login Flow"]
     Request -->|POST /logout| LogoutFlow["Logout Flow"]
     Request -->|POST /authenticated| AuthCheckFlow["Auth Check Flow"]
+    Request -->|POST /refresh| RefreshFlow["RAS Refresh Flow"]
+    Request -->|GET /userInfo| PassportFlow["Passport Retrieval Flow"]
     Request -->|POST /cleanUp| CleanupFlow["Cleanup Flow"]
-    Request -->|GET /ping or /version| HealthFlow["Health Check"]
+    Request -->|GET /ping or /version or /session-ttl| HealthFlow["Health Check"]
     
-    LoginFlow --> L1["1. Exchange auth code with IDP<br/>2. Retrieve user profile<br/>3. Create JWT token<br/>4. Store session<br/>5. Log login event"]
+    LoginFlow --> L1["1. Exchange auth code with IDP<br/>2. Retrieve user profile<br/>3. Persist session and optional passport<br/>4. Log login event<br/>5. Return session-backed auth state"]
     
     LogoutFlow --> L2["1. Notify IDP for logout<br/>2. Destroy session<br/>3. Log logout event"]
     
     AuthCheckFlow --> L3["1. Check session tokens exist<br/>2. Return auth status"]
+
+    RefreshFlow --> L6["1. Load refresh token from session<br/>2. Exchange for new RAS tokens<br/>3. Validate refreshed passport<br/>4. Persist updated tokens and passport"]
+
+    PassportFlow --> L7["1. Resolve req.sessionID<br/>2. Load session userInfo<br/>3. Query stored passport by email and IDP<br/>4. Return raw passport JWT"]
     
     CleanupFlow --> L4["1. Verify JWT signature<br/>2. Validate token expiry<br/>3. Clean up stale sessions"]
     
@@ -33,10 +39,10 @@ graph TB
 sequenceDiagram
     actor Client
     participant AuthServer as Auth Server
-    participant IDP as IDP Client<br/>(Google/NIH/DCF)
+    participant IDP as IDP Client<br/>(Google/NIH/DCF/RAS/Test)
     participant IDPServer as IDP Server
     participant MySQL as MySQL DB
-    participant Neo4j as Neo4j DB
+    participant EventService as Event Service
     
     Client->>AuthServer: POST /login<br/>(authCode, IDP, redirectUri)
     
@@ -45,13 +51,18 @@ sequenceDiagram
     IDPServer-->>IDP: Access token, ID token, user info
     IDP->>IDPServer: Fetch user profile<br/>(userinfo endpoint)
     IDPServer-->>IDP: { name, email, ... }
-    IDP-->>AuthServer: { name, lastName, tokens, email, idp }
+    IDP-->>AuthServer: { name, lastName, tokens, email, idp, passportJWT? }
     
     AuthServer->>MySQL: Store session<br/>{ email, IDP, tokens, name }
     MySQL-->>AuthServer: Session ID
+
+    alt RAS login includes passportJWT
+        AuthServer->>MySQL: Upsert ctdc.user_passports<br/>{ email, idp, passport_jwt_v11 }
+        MySQL-->>AuthServer: Stored
+    end
     
-    AuthServer->>Neo4j: Log LoginEvent<br/>{ timestamp, email, IDP, event_type }
-    Neo4j-->>AuthServer: OK
+    AuthServer->>EventService: storeLoginEvent(...)
+    EventService-->>AuthServer: OK
     
     AuthServer-->>Client: { name, email, timeout }
     
@@ -61,7 +72,7 @@ sequenceDiagram
 **Code Path**:  
 1. [routes/auth.js — POST /login handler](../../routes/auth.js#L52-L83)  
 2. [idps/index.js — oauth2Client.login()](../../idps/index.js#L7-L19)  
-3. [idps/google.js or idps/nih.js — login() implementation](../../idps/)  
+3. IDP clients in [idps/](../../idps/) including [idps/ras.js](../../idps/ras.js)  
 4. [services/session.js — express-session middleware](../../services/session.js)  
 5. [neo4j/event-service.js — storeLoginEvent()](../../neo4j/event-service.js)
 
@@ -186,7 +197,95 @@ sequenceDiagram
 
 ---
 
-## 5. Health Check Flow
+## 5. RAS Refresh Flow
+
+**Endpoint**: `POST /api/auth/refresh`  
+**Input**: session ID from request body or current session; existing refresh token in session-backed data  
+**Output**: `{ status: 'success', email, expires_at }`
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant AuthServer as Auth Server
+    participant SessionStore as MySQL Session Store
+    participant RAS as RAS OAuth APIs
+    participant UserService as UserService
+    participant PassportStore as ctdc.user_passports
+
+    Client->>AuthServer: POST /refresh
+    AuthServer->>SessionStore: Load current tokens by req.sessionID or body.session_id
+    SessionStore-->>AuthServer: { refreshToken, ... }
+    AuthServer->>RAS: refreshRASTokenBundle(refreshToken)
+    RAS-->>AuthServer: new token bundle
+    AuthServer->>RAS: rasUserInfo(accessToken)
+    RAS-->>AuthServer: user info with passport_jwt_v11
+    AuthServer->>RAS: validateRASPassport(passportJWT)
+    RAS-->>AuthServer: Valid / Invalid
+
+    alt passport valid and session update succeeds
+        AuthServer->>SessionStore: updateSessionTokens(sessionId, newTokens)
+        AuthServer->>UserService: persistUserPassportJWT(email, IDP, passportJWT)
+        UserService->>PassportStore: upsert passport row
+        PassportStore-->>UserService: stored
+        AuthServer-->>Client: 200 success payload
+    else refresh or validation fails
+        AuthServer-->>Client: 4xx/5xx error payload
+    end
+```
+
+**Code Path**:  
+1. [routes/auth.js — POST /refresh handler](../../routes/auth.js#L135-L211)  
+2. [services/ras-auth.js — refreshRASTokenBundle()](../../services/ras-auth.js#L34-L53)  
+3. [services/ras-auth.js — rasUserInfo()](../../services/ras-auth.js#L55-L67)  
+4. [services/ras-auth.js — validateRASPassport()](../../services/ras-auth.js#L69-L79)  
+5. [services/mySQL/mySQL-operations.js — updateSessionTokens()](../../services/mySQL/mySQL-operations.js#L341-L384)
+
+---
+
+## 6. Passport Retrieval Flow
+
+**Endpoint**: `GET /api/auth/userInfo`  
+**Input**: authenticated session cookie  
+**Output**: `{ passportJWT }` or an error response
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant AuthServer as Auth Server
+    participant UserService as UserService
+    participant SessionStore as MySQL Session Store
+    participant PassportStore as ctdc.user_passports
+
+    Client->>AuthServer: GET /userInfo<br/>(with session cookie)
+    AuthServer->>UserService: getPassportBySession(req.sessionID)
+    UserService->>SessionStore: getSessionTokens(sessionId)
+    SessionStore-->>UserService: sessionData.userInfo
+
+    alt session contains email and IDP
+        UserService->>PassportStore: getPassportByEmail(email, IDP)
+        PassportStore-->>UserService: passport_jwt_v11 or null
+        alt passport found
+            UserService-->>AuthServer: passportJWT
+            AuthServer-->>Client: 200 { passportJWT }
+        else passport missing
+            UserService-->>AuthServer: null
+            AuthServer-->>Client: 404 { error: 'Passport not found' }
+        end
+    else session missing or incomplete
+        UserService-->>AuthServer: null
+        AuthServer-->>Client: 401/404 error payload
+    end
+```
+
+**Code Path**:  
+1. [routes/auth.js — GET /userInfo handler](../../routes/auth.js#L236-L261)  
+2. [services/user-service.js — getPassportBySession()](../../services/user-service.js#L29-L58)  
+3. [services/mySQL/mySQL-operations.js — getSessionTokens()](../../services/mySQL/mySQL-operations.js)  
+4. [services/mySQL/mySQL-operations.js — getPassportByEmail()](../../services/mySQL/mySQL-operations.js#L387-L414)
+
+---
+
+## 7. Health Check Flow
 
 **Endpoint**: `GET /api/auth/ping` and `GET /api/auth/version`  
 **Purpose**: Lightweight readiness/health checks for load balancers and orchestrators
@@ -244,7 +343,13 @@ All authentication events are recorded to database:
 | `DOWNLOAD` | User downloads file | (format depends on domain) |
 
 - **Code**: [bento-event-logging/model/](../../bento-event-logging/model/)  
-- **Storage**: MySQL or Neo4j (configurable at startup)
+- **Observed runtime path**: Event writes are initialized through [neo4j/event-service.js](../../neo4j/event-service.js), but route startup currently requires `DATABASE_TYPE=MYSQL`
+
+### RAS Passport Lifecycle
+
+- **Observed**: RAS login may return `passportJWT`, which is written to `ctdc.user_passports`
+- **Observed**: `POST /api/auth/refresh` refreshes tokens, fetches updated user info, validates the refreshed passport, and persists it back to MySQL when the session IDP is RAS
+- **Observed**: `GET /api/auth/userInfo` returns the raw stored passport JWT for the authenticated session without decoding claims
 
 ---
 
@@ -254,7 +359,7 @@ All authentication events are recorded to database:
 |---------|--------|--------|
 | DCF client implementation | May have special error handling | Not inspected |
 | Event format for REVIEW/DOWNLOAD events | Audit logging accuracy | Deferred to feature docs |
-| IDP token refresh strategy | Session extension mechanics | Not yet confirmed |
+| Non-RAS token refresh strategy | Session extension mechanics for other IDPs | Not yet confirmed |
 | MySQL vs Neo4j perf characteristics | Deployment decisions | Needs load test |
 
 ---

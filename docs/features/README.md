@@ -14,7 +14,9 @@ This directory contains documentation for end-to-end user-facing features and wo
 | **Local Test Login** | `POST /api/auth/login` (IDP=test) | Implemented | — |
 | **Logout** | `POST /api/auth/logout` | Implemented | — |
 | **Session Check** | `POST /api/auth/authenticated` | Implemented | — |
-| **Token Refresh** | `POST /api/auth/cleanUp` | Implemented | — |
+| **RAS Token Refresh** | `POST /api/auth/refresh` | Implemented | — |
+| **Passport Retrieval** | `GET /api/auth/userInfo` | Implemented | — |
+| **Token Cleanup** | `POST /api/auth/cleanUp` | Implemented | — |
 
 ### System Features
 
@@ -106,6 +108,16 @@ Links to dependent or related features.
 → Call `POST /api/auth/authenticated` with session cookie  
 → Response: `{ status: true/false }`  
 → See feature doc: `token-validation.md`
+
+**"I need the authenticated user's GA4GH passport"**  
+→ Call `GET /api/auth/userInfo` with the session cookie  
+→ Response: `{ passportJWT }` or a 401/404/500 error  
+→ See system docs: [../system-overview.md](../system-overview.md)
+
+**"I need to refresh a RAS session"**  
+→ Call `POST /api/auth/refresh` with the active session  
+→ Service refreshes tokens, validates the new passport, and persists updated session data  
+→ See system docs: [../architecture/runtime-flows.md](../architecture/runtime-flows.md)
 
 **"I need to log a user out"**  
 → Call `POST /api/auth/logout`  

@@ -62,7 +62,7 @@ The repository still contains Neo4j-related modules and environment variables, b
 - `POST /api/auth/login` — Authenticate user against configured IDP
 - `POST /api/auth/logout` — Clear session and optionally revoke IDP tokens
 - `POST /api/auth/authenticated` — Verify current session is valid
-- `GET /api/auth/passport` — Return the stored GA4GH Passport JWT for the current authenticated session
+- `GET /api/auth/userInfo` — Return the stored GA4GH Passport JWT for the current authenticated session
 - `POST /api/auth/refresh` — Refresh RAS tokens using refresh token from session (RAS-specific)
 - `POST /api/auth/cleanUp` — Token refresh and expired session cleanup
 - `GET /api/auth/ping` — Health check
