@@ -14,7 +14,7 @@ graph TB
     Client -->|HTTP Requests| AuthServer["Express.js<br/>Auth Server"]
     Browser -->|HTML/OAuth Flow| AuthServer
     
-    AuthServer -->|OAuth/OIDC| IDPs["Identity Providers<br/>(Google, NIH, DCF)"]
+    AuthServer -->|OAuth/OIDC| IDPs["Identity Providers<br/>(Google, NIH, DCF, RAS, Fence)"]
     AuthServer -->|Session Store| MySQLSession["MySQL<br/>Session Store"]
     AuthServer -->|Event Log + User Data| MySQLUserDB["MySQL<br/>Application Database"]
     
@@ -41,7 +41,7 @@ graph TB
 - **Session Store**: MySQL + `express-mysql-session`
 - **Application Data and Event Log**: MySQL
 - **Token**: JWT (`jsonwebtoken ^9.0.0`)
-- **OAuth Clients**: `googleapis ^95.0.0` for Google; custom NIH/DCF clients
+- **OAuth Clients**: `googleapis ^95.0.0` for Google; custom NIH, RAS, DCF, and Fence clients
 - **Monitoring**: NewRelic APM `^7.3.1`
 - **Infrastructure**: Docker containerized; handles CORS and proxy middleware
 
@@ -51,7 +51,8 @@ graph TB
 - **Session Timeout**: Configurable (default: 30 minutes)
 - **Default IDP**: Configurable (default: Google)
 - **Token Secret**: Required for JWT signing and verification
-- **Multi-IDP Support**: Simultaneously supports Google, NIH, DCF, Fence, and test IDP
+- **Multi-IDP Support**: Simultaneously supports Google, NIH, DCF, Fence, RAS, and test IDP
+- **RAS Passport Handling**: RAS tokens include GA4GH Passport claims; passports are persisted to MySQL for downstream claim access
 
 The repository still contains Neo4j-related modules and environment variables, but the active route initialization in `routes/auth.js` only accepts `MYSQL` and throws for any other database type.
 
@@ -60,6 +61,7 @@ The repository still contains Neo4j-related modules and environment variables, b
 - `POST /api/auth/login` — Authenticate user against configured IDP
 - `POST /api/auth/logout` — Clear session and optionally revoke IDP tokens
 - `POST /api/auth/authenticated` — Verify current session is valid
+- `POST /api/auth/refresh` — Refresh RAS tokens using refresh token from session (RAS-specific)
 - `POST /api/auth/cleanUp` — Token refresh and expired session cleanup
 - `GET /api/auth/ping` — Health check
 - `GET /api/auth/version` — Version and build date info
@@ -73,7 +75,9 @@ The repository still contains Neo4j-related modules and environment variables, b
 | JWT tokens | Stateless, scalable token validation without central store lookup |
 | Session store in MySQL | Sessions are persisted through MySQL-backed middleware |
 | Event log in MySQL | Login/logout events are written through `services/mySQL/mySQL-operations.js` in the current implementation |
-| Multiple IDPs | Different institutions use different auth systems (NIH, Google, DCF) |
+| Multiple IDPs | Different institutions use different auth systems (NIH, Google, DCF, RAS) |
+| RAS Passport Persistence | GA4GH Passports from RAS are stored in `ctdc.user_passports` table for claim extraction by downstream services |
+| RAS Reactive Refresh | RAS tokens use single-attempt refresh on 401 response; no retry loop to prevent refresh storms |
 
 ## Deployment Model
 
@@ -87,7 +91,8 @@ The repository still contains Neo4j-related modules and environment variables, b
 - **Observed**: App structure, entry point, core routes, service layer
 - **Observed**: Current runtime path uses MySQL for sessions and event writes; `routes/auth.js` rejects non-MySQL `DATABASE_TYPE` values
 - **Observed**: Neo4j modules and config fields remain in the repository but are not part of the active startup path
-- **Unknown**: Exact IDP-specific error handling; DCF client behavior (not inspected)
+- **Observed**: RAS integration (added 2026-04-22) with reactive token refresh and GA4GH Passport persistence
+- **Unknown**: Exact IDP-specific error handling; DCF client behavior (not inspected); Fence client behavior (not inspected)
 
 ---
 
