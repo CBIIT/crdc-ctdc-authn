@@ -31,12 +31,10 @@ graph TB
     subgraph "Data Access Layer"
         EventService["EventService<br/>Event Storage"]
         MySQLOps["mySQL/<br/>mySQL-operations.js"]
-        Neo4jOps["neo4j/<br/>neo4j-operations.js<br/>neo4j-service.js"]
     end
     
     subgraph "External Systems"
         MySQLDB[(MySQL DB<br/>Sessions, Users, Passports)]
-        Neo4jDB[(Neo4j DB<br/>Legacy Event Modules)]
         IDPServers["OAuth Servers<br/>(Google, NIH, DCF, RAS)"]
     end
     
@@ -69,10 +67,8 @@ graph TB
     RasAuth -->|Refresh / Validate| IDPServers
     
     EventService -->|Write| MySQLOps
-    EventService -->|Write| Neo4jOps
     
     MySQLOps -->|Read/Write| MySQLDB
-    Neo4jOps -->|Read/Write| Neo4jDB
     
     SessionService -->|Store| MySQLDB
     
@@ -116,10 +112,8 @@ graph TB
 
 | Component | File(s) | Purpose |
 |-----------|---------|---------|
-| **EventService** | [neo4j/event-service.js](../../neo4j/event-service.js) | Abstraction for storing login/logout/review/download/etc. events to DB |
+| **EventService Runtime Path** | [services/mySQL/mySQL-operations.js](../../services/mySQL/mySQL-operations.js) | Event persistence functions used by current route initialization |
 | **MySQL Operations** | [services/mySQL/mySQL-operations.js](../../services/mySQL/mySQL-operations.js) | SQL query execution for user/session/event data, session token refresh persistence, and passport lookup |
-| **Neo4j Operations** | [neo4j/neo4j-operations.js](../../neo4j/neo4j-operations.js) | Cypher query execution for event logging and user lookups |
-| **Neo4j Service** | [neo4j/neo4j-service.js](../../neo4j/neo4j-service.js) | High-level Neo4j queries (e.g., `getUserTokenUUIDs`) |
 
 ### Event Logging Layer
 
@@ -137,7 +131,6 @@ graph TB
 | **DCF OAuth** | User authentication | `DCF_CLIENT_ID`, `DCF_CLIENT_SECRET`, `DCF_AUTHORIZE_URL`, etc. |
 | **RAS OAuth** | User authentication, token refresh, passport validation | `RAS_CLIENT_ID`, `RAS_CLIENT_SECRET`, `RAS_TOKEN_URL`, `RAS_USERINFO_URL`, `RAS_VALIDATE_URL` |
 | **MySQL** | Session store & user data | `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_DATABASE`, etc. |
-| **Neo4j** | Event audit log | `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` |
 | **NewRelic** | APM/monitoring | [newrelic.js](../../newrelic.js) config |
 
 ## Dependency Relationships
@@ -178,7 +171,7 @@ RAS Refresh
 
 All components use centralized config ([config.js](../../config.js)) for:
 - IDP credentials (Google, NIH, DCF, RAS, test)
-- Database connection strings (MySQL, Neo4j)
+- Database connection strings (MySQL)
 - Session timeout and secrets
 - Logging paths
 - Environment mode (development/production)

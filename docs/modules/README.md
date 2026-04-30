@@ -29,10 +29,7 @@ This directory contains detailed documentation for each major application module
 
 | Module | Location | Purpose |
 |--------|----------|---------|
-| **Event Service** | [neo4j/event-service.js](../../neo4j/event-service.js) | Stores and queries authentication events |
-| **Neo4j Service** | [neo4j/neo4j-service.js](../../neo4j/neo4j-service.js) | High-level Neo4j operations |
-| **Neo4j Driver** | [neo4j/neo4j.js](../../neo4j/neo4j.js) | Low-level Neo4j Cypher execution |
-| **Neo4j Operations** | [neo4j/neo4j-operations.js](../../neo4j/neo4j-operations.js) | Event log queries and manipulations |
+| **Event Storage Operations** | [services/mySQL/mySQL-operations.js](../../services/mySQL/mySQL-operations.js) | Stores and queries authentication events |
 | **MySQL Operations** | [services/mySQL/mySQL-operations.js](../../services/mySQL/mySQL-operations.js) | User and session queries |
 
 ### Event Model Modules
@@ -41,7 +38,6 @@ This directory contains detailed documentation for each major application module
 |--------|----------|---------|
 | **Event Models** | [bento-event-logging/model/](../../bento-event-logging/model/) | Event class definitions (LoginEvent, LogoutEvent, etc.) |
 | **Event Constants** | [bento-event-logging/const/](../../bento-event-logging/const/) | Event types, access control, format mappings |
-| **Neo4j Event Driver** | [bento-event-logging/neo4j/neo4j-operations.js](../../bento-event-logging/neo4j/neo4j-operations.js) | Event persistence to Neo4j |
 
 ### Route & Controller Modules
 
@@ -99,7 +95,7 @@ Any quirks or gotchas.
 **User's session expires?** → [Session Service](../../services/session.js) + MySQL store  
 **Verify user's token?** → [Authentication Service](../../services/authenticatation-service.js)  
 **Exchange OAuth code?** → [IDP Dispatcher](../../idps/index.js) → IDP client  
-**Record login event?** → [Event Service](../../neo4j/event-service.js)  
+**Record login event?** → [MySQL Operations](../../services/mySQL/mySQL-operations.js)  
 **Find user's token UUIDs?** → [User Service](../../services/user-service.js)  
 
 ---

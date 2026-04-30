@@ -51,13 +51,13 @@ sequenceDiagram
     IDPServer-->>IDP: Access token, ID token, user info
     IDP->>IDPServer: Fetch user profile<br/>(userinfo endpoint)
     IDPServer-->>IDP: { name, email, ... }
-    IDP-->>AuthServer: { name, lastName, tokens, email, idp, passportJWT? }
+    IDP-->>AuthServer: { name, lastName, tokens, email, idp, passport }
     
     AuthServer->>MySQL: Store session<br/>{ email, IDP, tokens, name }
     MySQL-->>AuthServer: Session ID
 
-    alt RAS login includes passportJWT
-        AuthServer->>MySQL: Upsert ctdc.user_passports<br/>{ email, idp, passport_jwt_v11 }
+    alt RAS login includes passport
+        AuthServer->>MySQL: Upsert session{ email, idp, passport_jwt_v11 }
         MySQL-->>AuthServer: Stored
     end
     
@@ -74,7 +74,7 @@ sequenceDiagram
 2. [idps/index.js — oauth2Client.login()](../../idps/index.js#L7-L19)  
 3. IDP clients in [idps/](../../idps/) including [idps/ras.js](../../idps/ras.js)  
 4. [services/session.js — express-session middleware](../../services/session.js)  
-5. [neo4j/event-service.js — storeLoginEvent()](../../neo4j/event-service.js)
+5. [services/mySQL/mySQL-operations.js — storeLoginEvent()](../../services/mySQL/mySQL-operations.js)
 
 ---
 
@@ -91,7 +91,7 @@ sequenceDiagram
     participant IDP as IDP Client
     participant IDPServer as IDP Server
     participant MySQL as MySQL DB
-    participant Neo4j as Neo4j DB
+    participant EventStore as Event Store
     
     Client->>AuthServer: POST /logout<br/>{ IDP }
     
@@ -102,8 +102,8 @@ sequenceDiagram
     end
     IDP-->>AuthServer: Logout complete
     
-    AuthServer->>Neo4j: Log LogoutEvent<br/>{ email, IDP, timestamp }
-    Neo4j-->>AuthServer: OK
+    AuthServer->>EventStore: Log LogoutEvent<br/>{ email, IDP, timestamp }
+    EventStore-->>AuthServer: OK
     
     AuthServer->>MySQL: Destroy session
     MySQL-->>AuthServer: Session destroyed
@@ -209,8 +209,6 @@ sequenceDiagram
     participant AuthServer as Auth Server
     participant SessionStore as MySQL Session Store
     participant RAS as RAS OAuth APIs
-    participant UserService as UserService
-    participant PassportStore as ctdc.user_passports
 
     Client->>AuthServer: POST /refresh
     AuthServer->>SessionStore: Load current tokens by req.sessionID or body.session_id
@@ -223,10 +221,7 @@ sequenceDiagram
     RAS-->>AuthServer: Valid / Invalid
 
     alt passport valid and session update succeeds
-        AuthServer->>SessionStore: updateSessionTokens(sessionId, newTokens)
-        AuthServer->>UserService: persistUserPassportJWT(email, IDP, passportJWT)
-        UserService->>PassportStore: upsert passport row
-        PassportStore-->>UserService: stored
+        AuthServer->>SessionStore: updateSessionTokens(sessionId, newTokens,email, IDP, passportJWT)
         AuthServer-->>Client: 200 success payload
     else refresh or validation fails
         AuthServer-->>Client: 4xx/5xx error payload
@@ -254,7 +249,6 @@ sequenceDiagram
     participant AuthServer as Auth Server
     participant UserService as UserService
     participant SessionStore as MySQL Session Store
-    participant PassportStore as ctdc.user_passports
 
     Client->>AuthServer: GET /userInfo<br/>(with session cookie)
     AuthServer->>UserService: getPassportBySession(req.sessionID)
@@ -262,8 +256,6 @@ sequenceDiagram
     SessionStore-->>UserService: sessionData.userInfo
 
     alt session contains email and IDP
-        UserService->>PassportStore: getPassportByEmail(email, IDP)
-        PassportStore-->>UserService: passport_jwt_v11 or null
         alt passport found
             UserService-->>AuthServer: passportJWT
             AuthServer-->>Client: 200 { passportJWT }
@@ -343,7 +335,7 @@ All authentication events are recorded to database:
 | `DOWNLOAD` | User downloads file | (format depends on domain) |
 
 - **Code**: [bento-event-logging/model/](../../bento-event-logging/model/)  
-- **Observed runtime path**: Event writes are initialized through [neo4j/event-service.js](../../neo4j/event-service.js), but route startup currently requires `DATABASE_TYPE=MYSQL`
+- **Observed runtime path**: Event writes are handled through [services/mySQL/mySQL-operations.js](../../services/mySQL/mySQL-operations.js) in the current startup path
 
 ### RAS Passport Lifecycle
 
@@ -360,7 +352,7 @@ All authentication events are recorded to database:
 | DCF client implementation | May have special error handling | Not inspected |
 | Event format for REVIEW/DOWNLOAD events | Audit logging accuracy | Deferred to feature docs |
 | Non-RAS token refresh strategy | Session extension mechanics for other IDPs | Not yet confirmed |
-| MySQL vs Neo4j perf characteristics | Deployment decisions | Needs load test |
+| MySQL event volume perf characteristics | Deployment decisions | Needs load test |
 
 ---
 

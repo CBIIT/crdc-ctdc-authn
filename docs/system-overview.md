@@ -55,8 +55,6 @@ graph TB
 - **Multi-IDP Support**: Simultaneously supports Google, NIH, DCF, Fence, RAS, and test IDP
 - **RAS Passport Handling**: RAS tokens include GA4GH Passport claims; passports are persisted to MySQL for downstream claim access
 
-The repository still contains Neo4j-related modules and environment variables, but the active route initialization in `routes/auth.js` only accepts `MYSQL` and throws for any other database type.
-
 ## Supported Endpoints
 
 - `POST /api/auth/login` — Authenticate user against configured IDP
@@ -93,7 +91,6 @@ The repository still contains Neo4j-related modules and environment variables, b
 
 - **Observed**: App structure, entry point, core routes, service layer
 - **Observed**: Current runtime path uses MySQL for sessions and event writes; `routes/auth.js` rejects non-MySQL `DATABASE_TYPE` values
-- **Observed**: Neo4j modules and config fields remain in the repository but are not part of the active startup path
 - **Observed**: RAS integration (added 2026-04-22) with reactive token refresh and GA4GH Passport persistence
 - **Observed**: Passport retrieval endpoint (added 2026-04-23) uses `req.sessionID` plus MySQL-backed session data to return the stored GA4GH Passport JWT for the authenticated user
 - **Unknown**: Exact IDP-specific error handling; DCF client behavior (not inspected); Fence client behavior (not inspected)

@@ -225,33 +225,68 @@ sequenceDiagram
 autonumber
 participant User
 participant CTDC as CTDC
-participant RAS as NIH RAS /userinfo
+participant DB as CTDC Database
+participant RASV as NIH RAS /passport/validate
+participant RASU as NIH RAS /userinfo
+participant RASI as NIH RAS /auth/oauth/v2/introspect
 participant DCF as DCF DRS
 participant Storage as Object Storage
 
-User->>CTDC: Authenticate via CTDC
-CTDC->>RAS: Retrieve ga4gh_passport_v1 from /userinfo
-RAS-->>CTDC: Return Passport / Visas
-CTDC->>DCF: Forward Passport / Visas for DRS object request
-Note over CTDC,DCF: Passport / Visas sent via Authorization header or DRS-specific mechanism
-DCF->>DCF: Validate Passport / Visas
-Note over DCF: Validate signature and Visa claims referencing dbGaP approvals
-
-alt Authorization succeeds
-  DCF-->>CTDC: HTTP 200 + pre-signed URL
-  CTDC->>CTDC: Validate HTTP 200 response
-  CTDC->>CTDC: Inspect signed URL format and expiry
-  CTDC->>Storage: Fetch object using signed URL
-  alt Download or redirect succeeds
-    Storage-->>CTDC: Object content or valid redirect
-    CTDC-->>User: Authorized access confirmed
-  else Download fails
-    Storage-->>CTDC: Error / invalid redirect
-    CTDC-->>User: Download validation failed
+User->>CTDC: Request controlled-access file
+CTDC->>DB: Read access token + stored passport
+CTDC->>RASV: POST /passport/validate (stored passport)
+alt Passport valid
+  RASV-->>CTDC: Passport active
+else Passport expired or invalid
+  RASV-->>CTDC: Passport invalid/expired
+  CTDC->>RASU: GET /userinfo (Bearer access token from DB)
+  alt Userinfo succeeds
+    RASU-->>CTDC: New ga4gh_passport_v1 / Visas
+    CTDC->>DB: Save refreshed passport
+  else Userinfo fails (access token expired)
+    RASU-->>CTDC: 401/invalid token
+    CTDC->>RASI: POST /auth/oauth/v2/introspect (token refresh attempt)
+    alt Introspect/refresh succeeds
+      RASI-->>CTDC: Active/new access token
+      CTDC->>RASU: Retry GET /userinfo with new access token
+      alt Retry succeeds
+        RASU-->>CTDC: New ga4gh_passport_v1 / Visas
+        CTDC->>DB: Save new access token + passport
+      else Retry fails
+        RASU-->>CTDC: Error
+        CTDC-->>User: Re-authenticate through RAS
+      end
+    else Introspect/refresh fails
+      RASI-->>CTDC: Inactive/error
+      CTDC-->>User: Re-authenticate through RAS
+    end
   end
-else Authorization fails
-  DCF-->>CTDC: Access denied / non-200 response
-  CTDC-->>User: Access denied
+end
+
+alt Valid passport available for request
+  CTDC->>DCF: Forward Passport / Visas for DRS object request
+  Note over CTDC,DCF: Passport / Visas sent via Authorization header or DRS-specific mechanism
+  DCF->>DCF: Validate Passport / Visas
+  Note over DCF: Validate signature and Visa claims referencing dbGaP approvals
+
+  alt Authorization succeeds
+    DCF-->>CTDC: HTTP 200 + pre-signed URL
+    CTDC->>CTDC: Validate HTTP 200 response
+    CTDC->>CTDC: Inspect signed URL format and expiry
+    CTDC->>Storage: Fetch object using signed URL
+    alt Download or redirect succeeds
+      Storage-->>CTDC: Object content or valid redirect
+      CTDC-->>User: Authorized access confirmed
+    else Download fails
+      Storage-->>CTDC: Error / invalid redirect
+      CTDC-->>User: Download validation failed
+    end
+  else Authorization fails
+    DCF-->>CTDC: Access denied / non-200 response
+    CTDC-->>User: Access denied
+  end
+else Passport unavailable
+  CTDC-->>User: Re-authenticate through RAS
 end
 ```
 
@@ -268,7 +303,17 @@ Controlled Data Access Workflow:
 
 When the user requests controlled-access files for download:
 
-CTDC retrieves the ga4gh_passport_v1 from the RAS /userinfo endpoint.
+CTDC reads the stored Access Token and Passport from the database.
+
+CTDC validates the stored Passport through the RAS **/passport/validate** endpoint.
+
+If the Passport is expired or invalid, CTDC calls **/userinfo** using the Access Token from the database to fetch a new **ga4gh_passport_v1**.
+
+If **/userinfo** fails (for example, Access Token expired), CTDC attempts token recovery using **/auth/oauth/v2/introspect**, then retries **/userinfo**.
+
+If retry succeeds, CTDC saves the refreshed Access Token and Passport back to the database.
+
+If retry still fails, the user must re-authenticate through RAS before controlled-access requests can proceed.
 
 CTDC forwards the Passport/Visas to the DCF DRS endpoint using the required mechanism (e.g., Authorization header or DRS-specific method).
 

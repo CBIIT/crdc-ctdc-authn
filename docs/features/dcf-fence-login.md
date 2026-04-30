@@ -102,13 +102,13 @@ req.session.tokens = tokens;
 
 ## Event Logging
 
-**Observed**: The login and logout routes call `eventService.storeLoginEvent(...)` and `eventService.storeLogoutEvent(...)` from [neo4j/event-service.js](../../neo4j/event-service.js).
+**Observed**: The login and logout routes call `eventService.storeLoginEvent(...)` and `eventService.storeLogoutEvent(...)` in the route handlers.
 
 **Observed**: Despite the file location, the active runtime in [routes/auth.js](../../routes/auth.js) only initializes when `DATABASE_TYPE` is `MYSQL`.
 
 **Observed**: In the MySQL branch, the event service delegates to [services/mySQL/mySQL-operations.js](../../services/mySQL/mySQL-operations.js).
 
-**Conclusion**: The current DCF login flow records events through MySQL, not Neo4j.
+**Conclusion**: The current DCF login flow records events through MySQL.
 
 ## Authenticated Check
 
@@ -199,7 +199,7 @@ DCF: {
 | DCF `authenticated()` helper is not used by the route | Provider-backed token validation is not performed on `/api/auth/authenticated` |
 | DCF logout helper is not dispatched from [idps/index.js](../../idps/index.js) | Local logout works, but provider logout is not part of the active path |
 | Fence module is not wired into the dispatcher | The feature is not actually a combined DCF/Fence runtime flow |
-| Event service lives under a Neo4j path name | Repository structure suggests dual storage, but active runtime uses MySQL |
+| Event service module path is legacy-named | Repository structure suggests historical layering, but active runtime uses MySQL |
 | No explicit HTTP timeout handling in [services/dcf-auth.js](../../services/dcf-auth.js) | DCF network calls may wait longer than desired |
 
 ## Confidence Notes

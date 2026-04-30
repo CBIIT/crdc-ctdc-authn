@@ -25,7 +25,7 @@ This directory contains documentation for end-to-end user-facing features and wo
 | **Health Check** | `GET /api/auth/ping` | Verify server is running (load balancer use) |
 | **Version Endpoint** | `GET /api/auth/version` | Report build version and date |
 | **Session TTL Query** | `GET /api/auth/session-ttl` | Report remaining session lifetime |
-| **Event Auditing** | Async logging to Neo4j/MySQL | Record all authentication events for compliance |
+| **Event Auditing** | Async logging to MySQL | Record all authentication events for compliance |
 | **CORS Support** | Enabled by `cors()` middleware | Allow cross-origin requests from frontends |
 
 ## Feature Documentation Files
@@ -92,7 +92,7 @@ Links to dependent or related features.
 
 5. **Event Auditing** (`docs/features/event-auditing.md`)
    - What events are logged
-   - Neo4j vs MySQL event store selection
+   - MySQL event store behavior and query strategy
    - Query examples for compliance reports
 
 ---
@@ -125,8 +125,7 @@ Links to dependent or related features.
 → See feature doc: `logout.md`
 
 **"I need to audit user actions"**  
-→ Query Neo4j Event nodes for time-range and user email  
-→ Or query MySQL `events` table  
+→ Query MySQL `events` table for time-range and user email  
 → See feature doc: `event-auditing.md`
 
 ---
