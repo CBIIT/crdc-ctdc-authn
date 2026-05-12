@@ -70,7 +70,7 @@ describe("GET /auth test", () => {
       .post(LOGIN_ROUTE)
       .send({ code: "code", IDP: NIH })
       .expect(200);
-    expect(nihClient.login).toBeCalledTimes(1);
+    expect(nihClient.login).toHaveBeenCalledTimes(1);
   }, 10000);
 
   test(`auth google login called once`, async () => {
@@ -82,7 +82,7 @@ describe("GET /auth test", () => {
       .post(LOGIN_ROUTE)
       .send({ code: "code", IDP: GOOGLE })
       .expect(200);
-    expect(googleClient.login).toBeCalledTimes(1);
+    expect(googleClient.login).toHaveBeenCalledTimes(1);
   }, 10000);
 
   test(`auth login.gov login called once`, async () => {
@@ -95,20 +95,20 @@ describe("GET /auth test", () => {
       .post(LOGIN_ROUTE)
       .send({ code: "code", IDP: LOGIN_GOV })
       .expect(200);
-    expect(nihClient.login).toBeCalledTimes(1);
+    expect(nihClient.login).toHaveBeenCalledTimes(1);
   }, 10000);
 
   test(`auth logout nih`, async () => {
     const nihClient = require("../idps/nih");
     nihClient.logout.mockReturnValue(Promise.resolve());
     await request(app).post(LOGOUT_ROUTE).send({ IDP: NIH }).expect(200);
-    expect(nihClient.logout).toBeCalledTimes(1);
+    expect(nihClient.logout).toHaveBeenCalledTimes(1);
   }, 10000);
 
   test(`auth logout login.gov`, async () => {
     const nihClient = require("../idps/nih");
     nihClient.logout.mockReturnValue(Promise.resolve());
     await request(app).post(LOGOUT_ROUTE).send({ IDP: LOGIN_GOV }).expect(200);
-    expect(nihClient.logout).toBeCalledTimes(1);
+    expect(nihClient.logout).toHaveBeenCalledTimes(1);
   }, 10000);
 });
