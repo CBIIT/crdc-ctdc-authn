@@ -21,10 +21,6 @@ try {
 }
 
 
-
-// create a write stream (in append mode)
-const accessLogStream = fs.createWriteStream(path.join(__dirname, LOG_FOLDER, 'access.log'), { flags: 'a'})
-
 var authRouter = require('./routes/auth');
 var app = express();
 app.use(cors());

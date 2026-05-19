@@ -14,6 +14,5 @@ RUN npm install --omit=dev --ignore-scripts
 COPY  --chown=node:node . .
 
 EXPOSE 8082
-# Run as non-root user for security
-USER node
+
 CMD [ "node", "./bin/www" ]
