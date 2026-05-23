@@ -1,4 +1,5 @@
-const mySQLOps = require("../services/mySQL/mySQL-operations.js");
+const { mySQLOps } = require("../services/mySQL/mySQL-operations.js");
+const logger = require('winston');
 
 
 class CleaningService {
@@ -20,19 +21,17 @@ async function checkTokenAndClean(req,res) {
                 if (sessionIDFromTable == sessionID){
                     await mySQLOps.clearEventsBeforeTimestamp();
                     await mySQLOps.getCreateCommand("System","Database Cleaning","System","System");
-                    console.log("Database Wiped successfully");
+                    logger.info('Database wiped successfully');
                         response = "Database Wiped successfully";
                         return response
                 }
                 else{
-
-                    console.log("Session ID does not match");
+                    logger.warn('Cleanup rejected: session ID does not match');
                     response = "Session ID does not match"
                     return response
                 }
         } else{
-
-            console.log("Session ID is Null");
+            logger.warn('Cleanup rejected: session ID is null');
             response = "Session ID is Null"
             return response
         };

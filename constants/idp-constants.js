@@ -4,5 +4,6 @@ module.exports = Object.freeze({
     LOGIN_GOV: 'login.gov',
     NIH: 'nih',
     TEST: 'test-idp',
-    DCF: 'dcf'
+    DCF: 'dcf',
+    RAS: 'ras'
 });

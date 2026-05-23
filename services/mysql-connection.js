@@ -1,5 +1,6 @@
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const config = require('../config.js');
+const logger = require('../logger');
 
 const connection = mysql.createPool({
     host: config.mysql_host,
@@ -14,12 +15,12 @@ const connection = mysql.createPool({
 });
 
 const getTTL = (req, res) => {
-    console.log("getTTL")
+    logger.debug('Getting session TTL');
 
      connection.getConnection(async function (err, currentConnection) {
         const sessionID = getSessionIDFromCookie(req, res);
         if (err) {
-            console.log(err);
+            logger.error(`MySQL connection failed: ${err.message}`);
             res.json({ttl: null, error: "Could not establish a connection to the session database, see logs for details"});
             return;
         }
@@ -27,7 +28,7 @@ const getTTL = (req, res) => {
             connection.query("select expires from sessions where session_id=?", sessionID, (err, rows) => {
                 let response;
                 if (err){
-                    console.log(err);
+                    logger.error(`TTL query failed: ${err.message}`);
                     response = {ttl: null, error: "An error occurred while querying the database, see logs for details"};
                 }
                 else if (!rows || !rows[0] || !rows[0].expires){
@@ -51,7 +52,7 @@ const getTTL = (req, res) => {
 
 function getSessionIDFromCookie(req, res){
     if (!req || !req?.cookies || !req?.cookies["connect.sid"]){
-        console.log("this Req " + req?.cookies)
+        logger.warn('Session cookie missing or malformed');
         res.json({ttl: 0});
         return null;
     }
