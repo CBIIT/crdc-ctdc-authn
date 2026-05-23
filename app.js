@@ -1,4 +1,3 @@
-const newrelic = require('newrelic');
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -10,7 +9,6 @@ const config = require('./config');
 const {getTTL, getPing, getVersion} = require("./services/mysql-connection");
 const cookieParser = require('cookie-parser');
 const logger = require('./logger');
-
 
 const LOG_FOLDER = 'logs';
 let accessLogStream = process.stdout;
@@ -68,7 +66,6 @@ if (process.env.NODE_ENV === 'development') {
     });
   });
 }
-
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

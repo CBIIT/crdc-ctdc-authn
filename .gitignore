@@ -7,6 +7,7 @@ logs/
 yaml/
 newrelic_agent.log
 .env
+/coverage
 .DS_Store
 .agents/
 .github/
