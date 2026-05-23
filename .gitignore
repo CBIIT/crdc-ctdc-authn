@@ -8,3 +8,5 @@ yaml/
 newrelic_agent.log
 .env
 .DS_Store
+.agents/
+.github/

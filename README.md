@@ -1,80 +1,174 @@
-# Clinical and Translational Data Commons AuthN/AuthZ service
+# CRDC CTDC AuthN Service
 
-## Environmental Variables
-Following environmental variables are supported by the current runtime configuration.
+Authentication and session service for CTDC applications. This repository provides OAuth-based login/logout/auth-check endpoints across multiple identity providers (Google, NIH/Login.gov, DCF/Fence, RAS), with server-side session management in MySQL.
 
-## Core
-- VERSION: build version string
-- DATE: build date string
-- IDP: default identity provider when request does not include IDP
-- DATABASE_TYPE: active event/session backend type (currently startup path expects MYSQL)
-- COOKIE_SECRET: secret used to sign cookies
-- SESSION_TIMEOUT: session timeout in seconds (default 30 minutes)
-- TOKEN_SECRET: secret used to sign JWT tokens
- 
+## What This Service Does
+
+- Handles login via provider-specific auth code exchange
+- Persists server-side sessions in MySQL
+- Provides auth status and user-info endpoints for clients
+- Records login/logout events in the current MySQL runtime path
+- Exposes operational endpoints for health, version, and session TTL
+
+## Main Runtime Endpoints
+
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `POST /api/auth/authenticated`
+- `GET /api/auth/userInfo`
+- `POST /api/auth/cleanUp`
+- `GET /api/auth/ping`
+- `GET /api/auth/version`
+- `GET /api/auth/session-ttl`
+
+## Quick Start
+
+1. Install dependencies
+
+```bash
+npm install
+```
+
+2. Create local env file
+
+```bash
+cp .env-template .env
+```
+
+3. Fill required values in `.env` (at minimum: MySQL connection + cookie/token secrets + provider values you will use)
+
+4. Start the service
+
+```bash
+npm start
+```
+
+5. Verify health
+
+```bash
+curl http://localhost:3000/api/auth/ping
+```
+
+## Development Notes
+
+- Runtime currently expects `DATABASE_TYPE=MYSQL`.
+- Session storage is configured through `express-session` + `express-mysql-session`.
+- `NODE_ENV=development` enables the local index page at `/`.
+
 ## Testing
-- TEST_EMAIL: test email used by test-idp path
- 
-## MySQL Configuration
-- MYSQL_HOST: MySQL host
-- MYSQL_PORT: MySQL port
-- MYSQL_USER: MySQL username
-- MYSQL_PASSWORD: MySQL password
-- MYSQL_DATABASE: MySQL database name
 
+Run a focused auth route test:
 
-## Google Login Configuration
-- GOOGLE_CLIENT_ID: Google cloud client id
-- GOOGLE_CLIENT_SECRET: Google cloud client secret
-- GOOGLE_REDIRECT_URL: redirecting url after successful authentication
- 
-## NIH Login Configuration
-- NIH_CLIENT_ID: NIH login server client id
-- NIH_CLIENT_SECRET: NIH login client secret
-- NIH_BASE_URL: NIH login server url
-- NIH_REDIRECT_URL: redirecting url after successful authentication
-- NIH_USERINFO_URL: NIH API address to search user information
-- NIH_AUTHORIZE_URL: NIH API address to authenticate for login
-- NIH_TOKEN_URL: NIH API address to create token for login
-- NIH_LOGOUT_URL: NIH API address to invalidate token for logout
-- NIH_SCOPE: space-separated lists of identifiers to specify access privileges
-- NIH_PROMPT: to force re-authorization event when a current session is still active
+```bash
+npx jest test/auth.test.js --runInBand
+```
 
-## DCF/Fence Login Configuration
-- DCF_CLIENT_ID: DCF client id
-- DCF_CLIENT_SECRET: DCF client secret
-- DCF_BASE_URL: DCF base url
-- DCF_REDIRECT_URL: DCF redirect url
-- DCF_USERINFO_URL: DCF userinfo endpoint
-- DCF_AUTHORIZE_URL: DCF authorize endpoint
-- DCF_TOKEN_URL: DCF token endpoint
-- DCF_LOGOUT_URL: DCF logout endpoint
-- DCF_SCOPE: DCF scope list
-- DCF_PROMPT: DCF prompt behavior
+Run all tests:
 
-## RAS Login Configuration
-- RAS_CLIENT_ID: RAS client id
-- RAS_CLIENT_SECRET: RAS client secret
-- RAS_BASE_URL: RAS base url
-- RAS_REDIRECT_URL: RAS redirect url
-- RAS_USERINFO_URL: RAS userinfo endpoint
-- RAS_AUTHORIZE_URL: RAS authorize endpoint
-- RAS_TOKEN_URL: RAS token endpoint
-- RAS_LOGOUT_URL: RAS logout endpoint
-- RAS_VALIDATE_URL: RAS passport validation endpoint
-- RAS_SCOPE: RAS scope list
-- RAS_PROMPT: RAS prompt behavior
+```bash
+npx jest
+```
 
-## Email Configuration
-- EMAIL_SMTP_HOST: SMTP host
-- EMAIL_SMTP_PORT: SMTP port
-- EMAIL_USER: optional SMTP username
-- EMAIL_PASSWORD: optional SMTP password
+## Troubleshooting
 
-## New Relic Configuration
-- NEW_RELIC_APP_NAME: New Relic application name
-- NEW_RELIC_LICENSE_KEY: New Relic license key
+- MySQL auth errors (`ER_NOT_SUPPORTED_AUTH_MODE`): verify DB user/plugin compatibility and local credentials.
+- Session or DB warnings: confirm `MYSQL_*` values in `.env` and that the target DB is reachable.
+- Missing provider behavior: verify provider-specific env variables are set for the IDP you are testing.
 
-## Local Development Configuration
-- NODE_ENV: If set to "development", a test html page will be activated in the route "/"
-- NO_AUTO_LOGIN: If set to "true", local test page will only display authorization codes, instead of calling /login automatically
+## Environment Variables
+
+The following variables are supported by current runtime configuration.
+
+### Core
+
+- `VERSION`: build version string
+- `DATE`: build date string
+- `IDP`: default identity provider when request does not include IDP
+- `DATABASE_TYPE`: active backend type (current startup path expects `MYSQL`)
+- `COOKIE_SECRET`: secret used to sign cookies
+- `SESSION_TIMEOUT`: session timeout in seconds (default 30 minutes)
+- `TOKEN_SECRET`: secret used to sign JWT tokens
+
+### Testing
+
+- `TEST_EMAIL`: test email used by test-idp path
+
+### MySQL Configuration
+
+- `MYSQL_HOST`: MySQL host
+- `MYSQL_PORT`: MySQL port
+- `MYSQL_USER`: MySQL username
+- `MYSQL_PASSWORD`: MySQL password
+- `MYSQL_DATABASE`: MySQL database name
+
+### Neo4j Configuration
+
+- `NEO4J_URI`: Neo4j connection URI
+- `NEO4J_USER`: Neo4j username
+- `NEO4J_PASSWORD`: Neo4j password
+
+### Google Login Configuration
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URL`
+
+### NIH Login Configuration
+
+- `NIH_CLIENT_ID`
+- `NIH_CLIENT_SECRET`
+- `NIH_BASE_URL`
+- `NIH_REDIRECT_URL`
+- `NIH_USERINFO_URL`
+- `NIH_AUTHORIZE_URL`
+- `NIH_TOKEN_URL`
+- `NIH_LOGOUT_URL`
+- `NIH_SCOPE`
+- `NIH_PROMPT`
+
+### DCF/Fence Login Configuration
+
+- `DCF_CLIENT_ID`
+- `DCF_CLIENT_SECRET`
+- `DCF_BASE_URL`
+- `DCF_REDIRECT_URL`
+- `DCF_USERINFO_URL`
+- `DCF_AUTHORIZE_URL`
+- `DCF_TOKEN_URL`
+- `DCF_LOGOUT_URL`
+- `DCF_SCOPE`
+- `DCF_PROMPT`
+
+### RAS Login Configuration
+
+- `RAS_CLIENT_ID`
+- `RAS_CLIENT_SECRET`
+- `RAS_BASE_URL`
+- `RAS_REDIRECT_URL`
+- `RAS_USERINFO_URL`
+- `RAS_AUTHORIZE_URL`
+- `RAS_TOKEN_URL`
+- `RAS_LOGOUT_URL`
+- `RAS_VALIDATE_URL`
+- `RAS_SCOPE`
+
+### Email Configuration
+
+- `EMAIL_SMTP_HOST`
+- `EMAIL_SMTP_PORT`
+- `EMAIL_USER` (optional SMTP username)
+- `EMAIL_PASSWORD` (optional SMTP password)
+
+### New Relic Configuration
+
+- `NEW_RELIC_APP_NAME`
+- `NEW_RELIC_LICENSE_KEY`
+
+### Local Development
+
+- `NODE_ENV`: set to `development` to enable local test page at `/`
+- `NO_AUTO_LOGIN`: if `true`, local test page displays auth codes only and does not auto-call login
+
+## Documentation
+
+Architecture and maintenance docs are under [docs](docs).

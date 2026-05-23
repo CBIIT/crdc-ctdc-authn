@@ -52,7 +52,7 @@ graph LR
 
 ## Document Reliability
 
-- **Observed**: Existing docs already describe RAS refresh and passport retrieval.
+- **Observed**: Existing docs are partially aligned with the current route set and were refreshed for bootstrap accuracy.
 - **Observed**: Some earlier wording implied this service issues its own JWTs; code mostly validates tokens and stores IDP bundles.
 - **Unknown**: Complete production behavior for DCF and Fence flows was not fully traced in this bootstrap pass.
 

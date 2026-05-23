@@ -65,12 +65,12 @@ graph TB
 |---|---|---|---|
 | HTTP bootstrap | `bin/www` | Creates HTTP server and listens on port | Observed |
 | Express app | `app.js` | Middleware, CORS, session middleware, route mounting | Observed |
-| Auth router | `routes/auth.js` | Implements `/api/auth` login/logout/authenticated/refresh/cleanUp/userInfo | Observed |
+| Auth router | `routes/auth.js` | Implements `/api/auth` login/logout/authenticated/cleanUp/userInfo | Observed |
 | IDP dispatch | `idps/index.js` | Switches login/authenticated/logout by provider | Observed |
 | IDP clients | `idps/*.js` | Provider-specific OAuth/userinfo logic | Observed |
 | Session storage | `services/session.js` | Uses `express-mysql-session` | Observed |
 | TTL endpoint DB query | `services/mysql-connection.js` | Reads `sessions` table expiry | Observed |
-| User/passport service | `services/user-service.js` | Passport persistence and session-based lookup | Observed |
+| User service | `services/user-service.js` | Session-based user info lookup and token UUID lookup | Observed |
 | RAS helper service | `services/ras-auth.js` | Refresh, userinfo, passport validation | Observed |
 | Event service | `neo4j/event-service.js` | Current route wiring uses MySQL event writes | Observed |
 | Cleanup service | `services/clean-events.js` | Session-cookie driven cleanup path | Observed |
@@ -85,7 +85,11 @@ graph TB
 ## Contradiction Notes
 
 - **Observed contradiction**: Some documentation and naming still imply dual Neo4j/MySQL runtime parity, while current route initialization hard-fails unless MySQL is configured.
-- **Observed contradiction**: The cleanup/event code imports MySQL operations as if methods are top-level exports; export shape in `services/mySQL/mySQL-operations.js` may not match that assumption.
+
+## Known Runtime Warnings
+
+- **Observed**: `mysql2` emits warnings for unsupported pool options (`acquireTimeout`, `timeout`) currently passed in MySQL services.
+- **Impact**: Warnings are noisy now and may become hard errors in future mysql2 versions.
 
 ## What This File Does Not Cover
 
