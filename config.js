@@ -72,8 +72,7 @@ const config = {
     TOKEN_URL: process.env.RAS_TOKEN_URL,
     LOGOUT_URL: process.env.RAS_LOGOUT_URL,
     VALIDATE_URL: process.env.RAS_VALIDATE_URL,
-    SCOPE: process.env.RAS_SCOPE,
-    PROMPT: process.env.RAS_PROMPT
+    SCOPE: process.env.RAS_SCOPE
   },
 
   database_type: process.env.DATABASE_TYPE,

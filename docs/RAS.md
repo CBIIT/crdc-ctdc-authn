@@ -83,27 +83,29 @@ All RAS documentation received to date has been consolidated here. Please review
 ```mermaid
 sequenceDiagram
 autonumber
-actor User
-participant Browser as User Browser
-participant CTDC as CTDC Subsystem
-participant RAS as NIH RAS
-participant IdP as IAL2 IdP (Login.gov / ID.me / NIH SSO PIV)
 
-User->>Browser: Click "Login" in CTDC UI
-Browser-->>RAS: Redirect to /authorize (direct)
+actor User as "User"
+participant Browser as "User Browser"
+participant CTDC as "CTDC Subsystem"
+participant RAS as "NIH RAS"
+participant IdP as "IAL2 IdP (Login.gov / ID.me / NIH SSO PIV)"
+
+User->>Browser: Click Login in CTDC UI
+Browser->>RAS: Redirect to /authorize
 RAS-->>User: Select IAL2 IdP
 User->>IdP: Enter credentials + MFA
 IdP->>RAS: Authentication successful
-RAS-->>Browser: Redirect to CTDC callback (authorization code)
+RAS-->>Browser: Redirect to CTDC callback with authorization code
 Browser->>CTDC: Send authorization code
-CTDC->>RAS: POST /token (Client ID + Secret + code)
+CTDC->>RAS: POST /token with Client ID, Secret, and code
 RAS-->>CTDC: Access Token + Refresh Token
-CTDC->>RAS: GET /userinfo (Access Token)
+CTDC->>RAS: GET /userinfo with Access Token
 RAS-->>CTDC: User identity + Passport + Visas
 CTDC->>CTDC: Validate Passport and Visas
 CTDC->>CTDC: Establish session
 CTDC-->>Browser: Set secure Session ID cookie
 Browser-->>User: Authenticated session established
+
 ```
 
 The following steps are taken for users logging into the Clinical and Translational Data Commons (CTDC) subsystem to authenticate with NIH RAS and establish authorized sessions:
@@ -112,9 +114,9 @@ The following steps are taken for users logging into the Clinical and Translatio
 - The user is redirected to the RAS /authorize endpoint, where they can select an IAL2-compliant IdP (Login.gov, ID.me, NIH SSO with PIV).
 - The user provides credentials and completes multi-factor authentication.
 - RAS returns an authorization code to the CTDC callback URL.
-- CTDC exchanges the authorization code at the RAS /token endpoint using its Client ID and Client Secret.
-- RAS issues an Access Token and Refresh Token, along with the encoded Passport.
-- CTDC calls the /userinfo endpoint with the Access Token.
+- CTDC exchanges the authorization code at the RAS /token endpoint .
+- RAS issues an Access Token and Refresh Token, ID Token.
+- CTDC calls the /userinfo endpoint with the Access Token, Get Passport. 
 - RAS returns user identity details along with the Passport and Visas.
 - CTDC validates the Passport and establishes a session, storing a secure Session ID cookie in the user's browser.
 
@@ -150,11 +152,7 @@ After successful authentication, RAS redirects the user's browser back to the **
 
 ### **Step 4 - Exchange Code for Tokens**
 
-Sends a **POST request** to the RAS **/token endpoint**, including:
-
-- Authorization Code
-- Client ID
-- Client Secret
+Sends a **POST request** to the RAS **/token endpoint**
 
 RAS validates the request and prepares to issue tokens for the session.
 
@@ -168,13 +166,15 @@ curl -X POST "<https://stsstg.nih.gov/auth/oauth/v2/token>" \\
 
 \-d "code=YOUR_AUTH_CODE" \\
 
-\-d "redirect_uri=YOUR_CALLBACK_URL" \\
+\-d "redirect_uri=https://clinical-dev.datacommons.cancer.gov/api/auth/callback" \\
 
 \-d "client_id=YOUR_CLIENT_ID" \\
 
 \-d "client_secret=YOUR_CLIENT_SECRET" \\
 
-\-d "scope=profile email ga4gh_passport_v1 openid"
+\-d "scope=openid profile email ga4gh_passport_v1 researcher_role federated_identities_ial2 federated_identities federated_sources source"
+
+
 
 ### **Step 5 - RAS Returns Tokens**
 
@@ -184,7 +184,26 @@ RAS responds with a set of tokens used for authentication and session management
 - **Refresh Token** - used to obtain new tokens when the session expires
 - **ID Token** - contains basic identity information about the user
 
-### **Step 6 - Fetch User Info (Error)**
+
+response:
+
+```json
+{
+    "access_token": string,
+    "token_type": "Bearer",
+    "expires_in": 1800,
+    "refresh_token": string,
+    "scope": "openid profile email ga4gh_passport_v1 researcher_role federated_identities_ial2 federated_identities federated_sources source",
+    "id_token": string,
+    "id_token_type": "string",
+    "resource": [
+        "https://stsstg.nih.gov/*"
+    ]
+}
+```
+
+
+### **Step 6 - Fetch User Info **
 
 CTDC attempts to retrieve user information from the **RAS /userinfo endpoint** using the Access Token.
 
@@ -202,7 +221,128 @@ curl -X GET "<https://stsstg.nih.gov/openid/connect/v1.1/userinfo>"
 
 \-H "Accept: application/json"
 
+
 RAS returns user identity information from the **/userinfo endpoint**, along with the encoded **GA4GH Passport**, which includes the user's **Visas** (authorization claims).
+
+{
+  "type": "object",
+  "properties": {
+    "sub": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "preferred_username": {
+      "type": "string"
+    },
+    "userid": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "company": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "federated_identities_ial2": {
+      "type": "object",
+      "properties": {
+        "default_identity": {
+          "type": "string"
+        },
+        "authenticated_identity": {
+          "type": "string"
+        },
+        "sources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "identity_username": {
+                "type": "string"
+              },
+              "ial": {
+                "type": "integer"
+              },
+              "identity_sub": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "identity_username",
+              "ial",
+              "identity_sub"
+            ]
+          }
+        },
+        "identities": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "mail": {
+                "type": "string",
+                "format": "email"
+              },
+              "userid": {
+                "type": "string"
+              },
+              "firstname": {
+                "type": "string"
+              },
+              "lastname": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "mail",
+              "userid",
+              "firstname",
+              "lastname"
+            ]
+          }
+        }
+      },
+      "required": [
+        "default_identity",
+        "authenticated_identity",
+        "sources",
+        "identities"
+      ]
+    },
+    "txn": {
+      "type": "string"
+    },
+    "passport_jwt_v11": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "sub",
+    "name",
+    "first_name",
+    "last_name",
+    "preferred_username",
+    "userid",
+    "email",
+    "company",
+    "source",
+    "federated_identities_ial2",
+    "txn",
+    "passport_jwt_v11"
+  ]
+}
 
 ### **Step 7 - CTDC Validates Passport and Creates Session**
 
@@ -218,76 +358,44 @@ curl -X POST "<https://stsstg.nih.gov/passport/validate>"
 
 \-H "Content-Type: application/json"
 
+response:
+
+```string
+Valid
+Invalid
+```
+
 ## Access Data Files
 
 ```mermaid
 sequenceDiagram
-autonumber
-participant User
-participant CTDC as CTDC
-participant DB as CTDC Database
-participant RASV as NIH RAS /passport/validate
-participant RASU as NIH RAS /userinfo
-participant RASI as NIH RAS /auth/oauth/v2/introspect
-participant DCF as DCF DRS
-participant Storage as Object Storage
+    autonumber
+    actor User
+    participant CTDC
+    participant AuthZ as AuthZ Service
+    participant DCF as DCF DRS Endpoint
 
-User->>CTDC: Request controlled-access file
-CTDC->>DB: Read access token + stored passport
-CTDC->>RASV: POST /passport/validate (stored passport)
-alt Passport valid
-  RASV-->>CTDC: Passport active
-else Passport expired or invalid
-  RASV-->>CTDC: Passport invalid/expired
-  CTDC->>RASU: GET /userinfo (Bearer access token from DB)
-  alt Userinfo succeeds
-    RASU-->>CTDC: New ga4gh_passport_v1 / Visas
-    CTDC->>DB: Save refreshed passport
-  else Userinfo fails (access token expired)
-    RASU-->>CTDC: 401/invalid token
-    CTDC->>RASI: POST /auth/oauth/v2/introspect (token refresh attempt)
-    alt Introspect/refresh succeeds
-      RASI-->>CTDC: Active/new access token
-      CTDC->>RASU: Retry GET /userinfo with new access token
-      alt Retry succeeds
-        RASU-->>CTDC: New ga4gh_passport_v1 / Visas
-        CTDC->>DB: Save new access token + passport
-      else Retry fails
-        RASU-->>CTDC: Error
-        CTDC-->>User: Re-authenticate through RAS
-      end
-    else Introspect/refresh fails
-      RASI-->>CTDC: Inactive/error
-      CTDC-->>User: Re-authenticate through RAS
+    User->>CTDC: Requests controlled-access files for download
+
+    CTDC->>CTDC: Enforces session validation
+    CTDC->>AuthZ: Performs authorization checks<br/>to ensure continued access compliance
+    CTDC->>CTDC: Aligns Passport refresh with session TTL
+
+    alt GET endpoint
+        CTDC->>DCF: GET /ga4gh/drs/v1/objects/{guid}/access/{access_id}<br/>Authorization: Bearer {access_token}
+    else POST endpoint
+        CTDC->>DCF: POST /ga4gh/drs/v1/objects/{guid}/access/{access_id}<br/>Content-Type: application/json<br/>{ "passports": [ {passport} ] }
     end
-  end
-end
 
-alt Valid passport available for request
-  CTDC->>DCF: Forward Passport / Visas for DRS object request
-  Note over CTDC,DCF: Passport / Visas sent via Authorization header or DRS-specific mechanism
-  DCF->>DCF: Validate Passport / Visas
-  Note over DCF: Validate signature and Visa claims referencing dbGaP approvals
+    DCF->>DCF: Validates Passport and Visas
+    DCF->>DCF: Verifies signatures
+    DCF->>DCF: Evaluates Visa claims<br/>(e.g., dbGaP approvals)
 
-  alt Authorization succeeds
-    DCF-->>CTDC: HTTP 200 + pre-signed URL
-    CTDC->>CTDC: Validate HTTP 200 response
-    CTDC->>CTDC: Inspect signed URL format and expiry
-    CTDC->>Storage: Fetch object using signed URL
-    alt Download or redirect succeeds
-      Storage-->>CTDC: Object content or valid redirect
-      CTDC-->>User: Authorized access confirmed
-    else Download fails
-      Storage-->>CTDC: Error / invalid redirect
-      CTDC-->>User: Download validation failed
-    end
-  else Authorization fails
-    DCF-->>CTDC: Access denied / non-200 response
-    CTDC-->>User: Access denied
-  end
-else Passport unavailable
-  CTDC-->>User: Re-authenticate through RAS
-end
+    DCF-->>CTDC: HTTP 200<br/>{ "url": "string" }
+    CTDC->>CTDC: Validates HTTP 200 response
+    CTDC-->>User: Returns signed URL
+    User->>DCF: Uses signed URL to download the object
+    
 ```
 
 
@@ -303,19 +411,39 @@ Controlled Data Access Workflow:
 
 When the user requests controlled-access files for download:
 
-CTDC reads the stored Access Token and Passport from the database.
-
-CTDC validates the stored Passport through the RAS **/passport/validate** endpoint.
-
-If the Passport is expired or invalid, CTDC calls **/userinfo** using the Access Token from the database to fetch a new **ga4gh_passport_v1**.
-
-If **/userinfo** fails (for example, Access Token expired), CTDC attempts token recovery using **/auth/oauth/v2/introspect**, then retries **/userinfo**.
-
-If retry succeeds, CTDC saves the refreshed Access Token and Passport back to the database.
-
-If retry still fails, the user must re-authenticate through RAS before controlled-access requests can proceed.
-
 CTDC forwards the Passport/Visas to the DCF DRS endpoint using the required mechanism (e.g., Authorization header or DRS-specific method).
+
+There are two endpoints: GET and POST.
+
+The GET endpoint accepts an access token only in the request header. The POST endpoint accepts passports in the request body.
+
+GET Example
+
+access_id is the storage protocol, such as s3, gs, or https.
+
+curl --request GET \
+  --url "https://nci-crdc.datacommons.io/ga4gh/drs/v1/objects/{{guid}}/access/{{access_id}}" \
+  --header "Authorization: Bearer {{access_token}}"
+Returns
+{
+  "url": "string"
+}
+POST Example
+
+The request body is JSON with passports as the key. The value of passports is a list of passports. In this example, the list contains only the RAS passport.
+
+curl --request POST \
+  --url "https://nci-crdc.datacommons.io/ga4gh/drs/v1/objects/{{guid}}/access/{{access_id}}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "passports": [
+      {{passport}}
+    ]
+  }'
+Returns
+{
+  "url": "string"
+}
 
 DCF validates the Passport and Visas, including signature verification and evaluation of Visa claims (e.g., dbGaP approvals).
 
@@ -349,18 +477,19 @@ Note over CTDC,RAS: Authorization: Bearer new Access Token
 RAS-->>CTDC: Userinfo + ga4gh_passport_v1
 ```
 
-- The user authenticates to CTDC using the RAS login flow (User Flow 1).
 - During token exchange, CTDC receives an **Access Token** and a **Refresh Token** from RAS.
 - When the Access Token expires or is about to expire:
   - CTDC sends a **refresh token request** to the RAS /token endpoint.
   - RAS validates the Refresh Token and issues a **new Access Token**.
 
-curl -X POST https://stsstg.nih.gov/auth/oauth/v2/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=refresh_token" \
-  -d "refresh_token=YOUR_REFRESH_TOKEN" \
-  -d "client_id=YOUR_CLIENT_ID" \
-  -d "client_secret=YOUR_CLIENT_SECRET"
+curl -X POST 'https://stsstg.nih.gov/auth/oauth/v2/token' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'grant_type=refresh_token' \
+  --data-urlencode 'refresh_token={token}' \
+  --data-urlencode 'client_id={client_id}' \
+  --data-urlencode 'client_secret={client_secret}' \
+  --data-urlencode 'token_type_hint=refresh_token'
+
 
 - CTDC then uses the new Access Token to call the **/openid/connect/v1.1/userinfo endpoint**.
 - RAS returns the user information, including the **ga4gh_passport_v1 claim**.
@@ -370,13 +499,11 @@ curl -X POST https://stsstg.nih.gov/auth/oauth/v2/token \
 
 ## Log out
 
-
-curl -X POST https://stsstg.nih.gov/auth/oauth/v2/token/revoke \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "token=YOUR_REFRESH_TOKEN" \
-  -d "token_type_hint=refresh_token" \
-  -d "client_id=YOUR_CLIENT_ID" \
-  -d "client_secret=YOUR_CLIENT_SECRET"
+curl --location 'https://stsstg.nih.gov/connect/session/logout' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'client_id={client_id}' \
+--data-urlencode 'client_secret={client_secret}' \
+--data-urlencode 'id_token={id_token}'
   
 # Reference
 

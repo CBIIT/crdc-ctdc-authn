@@ -68,9 +68,7 @@ ras: {
   AUTHORIZE_URL: process.env.RAS_AUTHORIZE_URL,
   TOKEN_URL: process.env.RAS_TOKEN_URL,
   LOGOUT_URL: process.env.RAS_LOGOUT_URL,
-  VALIDATE_URL: process.env.RAS_VALIDATE_URL,
-  SCOPE: process.env.RAS_SCOPE,
-  PROMPT: process.env.RAS_PROMPT
+  VALIDATE_URL: process.env.RAS_VALIDATE_URL
 },
 
 // in getUrlOrDefault

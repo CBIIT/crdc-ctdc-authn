@@ -21,6 +21,12 @@
       "sourceType": "github",
       "computedHash": "9edba9a38684c060fdc38290f640e1dc0c37de286723ac9be73bacacf7cd6f3d"
     },
+    "junit5-spring-testing": {
+      "source": "jonkiky/agentskills",
+      "sourceType": "github",
+      "skillPath": "skills/junit5-spring-testing/SKILL.md",
+      "computedHash": "ba1963ce6f786353269f955d8316e9206357f2b33fb195d116e16d259b34a640"
+    },
     "receiving-code-review": {
       "source": "obra/superpowers",
       "sourceType": "github",

@@ -49,6 +49,7 @@ The RAS service module owns provider-specific protocol work:
 - call the RAS userinfo endpoint
 - call the passport validation endpoint
 - normalize errors into route-friendly auth failures
+- log out 
 
 ### RAS IDP Module
 

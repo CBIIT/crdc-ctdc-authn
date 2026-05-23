@@ -38,8 +38,8 @@ graph LR
 1. **Observed**: Login orchestration via IDP-specific clients (`POST /api/auth/login`).
 2. **Observed**: Session lifecycle management and logout (`POST /api/auth/logout`).
 3. **Observed**: Session-backed authenticated checks (`POST /api/auth/authenticated`).
-4. **Observed**: RAS refresh-token flow and passport validation (`POST /api/auth/refresh`).
-5. **Observed**: Stored GA4GH passport retrieval by active session (`GET /api/auth/userInfo`).
+4. **Observed**: RAS login path validates `passport_jwt_v11` during login/auth checks in provider code.
+5. **Observed**: User info retrieval by active session (`GET /api/auth/userInfo`) returns session userInfo data.
 6. **Observed**: Event recording through `EventService` into MySQL path.
 7. **Observed**: Operational endpoints for ping/version/session TTL.
 

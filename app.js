@@ -9,17 +9,17 @@ const cors = require('cors');
 const config = require('./config');
 const {getTTL, getPing, getVersion} = require("./services/mysql-connection");
 const cookieParser = require('cookie-parser');
-const logger = require('winston');  
+const logger = require('./logger');
 
 
 const LOG_FOLDER = 'logs';
-if (!fs.existsSync(LOG_FOLDER)) {
-  fs.mkdirSync(LOG_FOLDER);
+let accessLogStream = process.stdout;
+try {
+  fs.mkdirSync(LOG_FOLDER, { recursive: true });
+  accessLogStream = fs.createWriteStream(path.join(__dirname, LOG_FOLDER, 'access.log'), { flags: 'a' });
+} catch (err) {
+  logger.warn(`Unable to create log directory "${LOG_FOLDER}", falling back to stdout: ${err.message}`);
 }
-
-
-// create a write stream (in append mode)
-const accessLogStream = fs.createWriteStream(path.join(__dirname, LOG_FOLDER, 'access.log'), { flags: 'a'})
 
 var authRouter = require('./routes/auth');
 
@@ -33,18 +33,18 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.get('/api/auth/session-ttl', (req, res) => {
-  logger.debug(`[${req.method}] ${req.path} - Getting session TTL`);
+  logger.debug(`http.request.start method=${req.method} path=${req.path}`);
   logger.info('Session TTL endpoint called');
   getTTL(req, res);
 });
 
 app.get('/api/auth/ping', function (req, res, next) {
-  logger.debug(`[${req.method}] ${req.path} - Health check`);
+  logger.debug(`http.request.start method=${req.method} path=${req.path}`);
   res.send(`pong`);
 });
 
 app.get('/api/auth/version', function (req, res, next) {
-  logger.debug(`[${req.method}] ${req.path} - Retrieving version`);
+  logger.debug(`http.request.start method=${req.method} path=${req.path}`);
   logger.info(`Version requested: ${config.version}`);
   res.json({
       version: config.version, date: config.date
@@ -59,7 +59,7 @@ if (process.env.NODE_ENV === 'development') {
   logger.info("Running in development mode, local test page enabled");
   app.set('view engine', 'ejs');
   app.get('/', (req, res) => {
-    logger.debug(`[${req.method}] ${req.path} - Rendering development test page`);
+    logger.debug(`http.request.start method=${req.method} path=${req.path}`);
     res.render('index', {
       googleClientID: config.google.CLIENT_ID,
       nihClientID: config.nih.CLIENT_ID,
@@ -77,10 +77,14 @@ app.use(function(req, res, next) {
 
 // error handler
 app.use(function(err, req, res, next) {
+  if (res.headersSent) {
+    return next(err);
+  }
+
   const statusCode = err.status || 500;
   logger.error(`[${req.method}] ${req.path} - Error ${statusCode}: ${err.message}`);
   if (req.app.get('env') === 'development') {
-    logger.debug('Error details:', err);
+    logger.debug(`http.request.error stack=${err.stack || 'n/a'}`);
   }
   // set locals, only providing error in development
   res.locals.message = err.message;

@@ -3,7 +3,7 @@
 ## Code-Backed Gaps
 
 1. **Observed**: MySQL operations export shape appears inconsistent with usage.
-- Evidence: `services/mySQL/mySQL-operations.js` exports `{ mySQLOps }`, while multiple files import it as if methods are top-level (`mySQLOps.getSessionTokens`, `mySQLOps.compareSessionID`, etc.).
+- Evidence: `services/mySQL/mySQL-operations.js` exports `{ mySQLOps }` and runtime callers currently pass that wrapper object into services (for example in `routes/auth.js`), but historical docs/tests mention top-level method imports.
 - Impact: Runtime `TypeError` risk if import/export assumptions diverge outside mocked tests.
 - Open question: Should callers use `const { mySQLOps } = require(...)` or should module export the object directly?
 
@@ -12,10 +12,10 @@
 - Impact: Provider dispatch in `/authenticated` can fail or return false unexpectedly.
 - Open question: Should session userInfo normalize to one canonical key (`IDP` or `idp`) everywhere?
 
-3. **Observed**: Session token retrieval function currently returns only `tokens`, but caller in user service expects `sessionData.userInfo`.
-- Evidence: `services/user-service.js#getPassportBySession` reads `sessionData.userInfo`; `services/mySQL/mySQL-operations.js#getSessionTokens` resolves `sessionData.tokens`.
-- Impact: Passport retrieval can fail to resolve `email` and `IDP`.
-- Open question: Should `getSessionTokens` return full session data instead of tokens only?
+3. **Observed**: Passport persistence path is present in service API but not wired in runtime data layer.
+- Evidence: `services/user-service.js` defines `persistUserPassportJWT`, while `services/mySQL/mySQL-operations.js` does not currently implement `upsertUserPassportJWT` and `routes/auth.js` does not call the persistence method.
+- Impact: `ctdc.user_passports` is not used by current runtime flow.
+- Open question: Should passport persistence be implemented now, or should related docs/tests be downgraded to planned work?
 
 4. **Observed**: Cleanup logic uses direct cookie parsing assumptions.
 - Evidence: `services/clean-events.js#getSessionIDFromCookie` expects `connect.sid` regex shape and writes response inside helper.

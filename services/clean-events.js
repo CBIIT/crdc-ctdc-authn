@@ -1,4 +1,4 @@
-const mySQLOps = require("../services/mySQL/mySQL-operations.js");
+const { mySQLOps } = require("../services/mySQL/mySQL-operations.js");
 const logger = require('winston');
 
 

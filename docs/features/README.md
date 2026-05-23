@@ -9,8 +9,7 @@ This is a first-pass feature inventory and scoping guide. Deep feature docs shou
 | Login | `POST /api/auth/login` | Exchange auth code with selected IDP, create session state | Observed |
 | Logout | `POST /api/auth/logout` | Notify IDP (when implemented) and destroy server session | Observed |
 | Auth check | `POST /api/auth/authenticated` | Verify active session/token validity | Observed |
-| RAS refresh | `POST /api/auth/refresh` | Refresh RAS token bundle and persist updated tokens | Observed |
-| Passport retrieval | `GET /api/auth/userInfo` | Return stored GA4GH passport JWT for active session user | Observed |
+| User info retrieval | `GET /api/auth/userInfo` | Return session userInfo for active session | Observed |
 | Cleanup | `POST /api/auth/cleanUp` | Trigger maintenance cleanup logic tied to session cookie | Observed |
 | Operational endpoints | `GET /api/auth/ping`, `GET /api/auth/version`, `GET /api/auth/session-ttl` | Health/version/TTL visibility | Observed |
 
@@ -26,8 +25,7 @@ Examples:
 
 - `docs/features/login.md`
 - `docs/features/logout.md`
-- `docs/features/ras-refresh.md`
-- `docs/features/passport-retrieval.md`
+- `docs/features/user-info.md`
 
 ## What To Include In Deep Feature Docs
 

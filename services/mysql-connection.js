@@ -1,6 +1,6 @@
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const config = require('../config.js');
-const logger = require('winston');
+const logger = require('../logger');
 
 const connection = mysql.createPool({
     host: config.mysql_host,

@@ -9,14 +9,13 @@ graph TD
     Inbound["Inbound HTTP"] --> Login["Login\nPOST /api/auth/login"]
     Inbound --> Logout["Logout\nPOST /api/auth/logout"]
     Inbound --> Authn["Authenticated Check\nPOST /api/auth/authenticated"]
-    Inbound --> Refresh["RAS Refresh\nPOST /api/auth/refresh"]
-    Inbound --> Passport["Passport Retrieval\nGET /api/auth/userInfo"]
+    Inbound --> UserInfo["User Info Retrieval\nGET /api/auth/userInfo"]
     Inbound --> Cleanup["Cleanup\nPOST /api/auth/cleanUp"]
     Inbound --> Ops["Operational\nGET /api/auth/ping|version|session-ttl"]
 
     Login --> IDP["IDP clients"]
-    Refresh --> RAS["services/ras-auth.js"]
-    Passport --> User["services/user-service.js"]
+    Authn --> IDP
+    UserInfo --> User["services/user-service.js"]
     Cleanup --> CleanSvc["services/clean-events.js"]
 
     User --> SQL[("MySQL")]
@@ -32,8 +31,7 @@ graph TD
 | Login and session creation | `POST /api/auth/login` | `routes/auth.js`, `idps/index.js`, provider clients, `EventService` | Observed |
 | Logout and session teardown | `POST /api/auth/logout` | `routes/auth.js`, `controllers/auth-api.js`, IDP logout path | Observed |
 | Session-backed auth check | `POST /api/auth/authenticated` | `routes/auth.js`, IDP authenticated call | Observed |
-| RAS token lifecycle | `POST /api/auth/refresh` | `routes/auth.js`, `services/ras-auth.js`, MySQL session update | Observed |
-| Stored passport lookup | `GET /api/auth/userInfo` | `routes/auth.js`, `services/user-service.js`, MySQL passport lookup | Observed |
+| User info retrieval | `GET /api/auth/userInfo` | `routes/auth.js`, `services/user-service.js`, `services/mySQL/mySQL-operations.js#getSessionData` | Observed |
 | Cleanup and maintenance | `POST /api/auth/cleanUp` | `services/clean-events.js`, MySQL operations | Observed |
 | Operational health/metadata | `GET /api/auth/ping`, `GET /api/auth/version`, `GET /api/auth/session-ttl` | `app.js`, `services/mysql-connection.js` | Observed |
 
@@ -41,14 +39,13 @@ graph TD
 
 - **Unknown**: Full per-IDP failure path differences for Google/NIH/DCF/Test under `/authenticated` and `/logout`.
 - **Unknown**: Whether all cleanup logic paths are exercised in production.
-- **Inferred**: Refresh flow is RAS-specific even though endpoint naming is generic.
+- **Observed**: There is currently no `/api/auth/refresh` route in `routes/auth.js`.
 
 ## Suggested Next Deep Docs (On Demand)
 
 - `docs/features/login.md`
 - `docs/features/logout.md`
-- `docs/features/ras-refresh.md`
-- `docs/features/passport-retrieval.md`
+- `docs/features/user-info.md`
 
 - Session checks are fast (in-memory after MySQL read)  
 - JWT checks require cryptographic verification  
@@ -70,9 +67,9 @@ All authentication events are recorded to database:
 
 ### RAS Passport Lifecycle
 
-- **Observed**: RAS login may return `passportJWT`, which is written to `ctdc.user_passports`
-- **Observed**: `POST /api/auth/refresh` refreshes tokens, fetches updated user info, validates the refreshed passport, and persists it back to MySQL when the session IDP is RAS
-- **Observed**: `GET /api/auth/userInfo` returns the raw stored passport JWT for the authenticated session without decoding claims
+- **Observed**: RAS login validates `passport_jwt_v11` through `validateRASPassport` in `idps/ras.js`.
+- **Observed**: Current runtime route set does not include `POST /api/auth/refresh`.
+- **Observed**: `GET /api/auth/userInfo` returns `sessionData.userInfo` from the session record via `UserService#getUserInfo`, not a passport table lookup.
 
 ---
 

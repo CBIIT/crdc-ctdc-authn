@@ -1,5 +1,56 @@
 const request = require('supertest');
 const {NIH, LOGIN_GOV, GOOGLE, RAS} = require("../constants/idp-constants");
+jest.mock('newrelic', () => ({}));
+
+jest.mock('../services/session', () => ({
+    createSession: jest.fn(() => (req, res, next) => {
+        let injectedSession = {};
+        if (req.headers['x-test-session']) {
+            try {
+                injectedSession = JSON.parse(req.headers['x-test-session']);
+            } catch (e) {
+                injectedSession = {};
+            }
+        }
+
+        req.session = {
+            ...injectedSession,
+            destroy: jest.fn((cb) => cb && cb())
+        };
+        req.sessionID = req.headers['x-test-session-id'] || 'mock-session-id';
+        next();
+    })
+}));
+
+jest.mock('../services/mysql-connection', () => ({
+    getTTL: jest.fn((req, res) => res.json({ ttl: 0 })),
+    getPing: jest.fn(),
+    getVersion: jest.fn()
+}));
+
+jest.mock('../neo4j/event-service', () => ({
+    EventService: jest.fn().mockImplementation(() => ({
+        storeLoginEvent: jest.fn().mockResolvedValue('ok'),
+        storeLogoutEvent: jest.fn().mockResolvedValue('ok')
+    }))
+}));
+
+jest.mock('../services/clean-events.js', () => ({
+    CleaningService: jest.fn(),
+    checkTokenAndClean: jest.fn().mockResolvedValue('ok')
+}));
+
+jest.mock('../services/mySQL/mySQL-operations.js', () => ({
+    mySQLOps: {
+        getCreateCommand: jest.fn().mockResolvedValue('ok'),
+        getEventAfterTimestamp: jest.fn().mockResolvedValue([]),
+        compareSessionID: jest.fn().mockResolvedValue('mock-session-id'),
+        getLastLogin: jest.fn().mockResolvedValue(null),
+        clearEventsBeforeTimestamp: jest.fn().mockResolvedValue('ok'),
+        getSessionData: jest.fn().mockResolvedValue(null)
+    }
+}));
+
 jest.mock("../idps/nih");
 jest.mock("../idps/google");
 jest.mock("../idps/ras");
@@ -18,6 +69,9 @@ const app = require('../app');
 describe('GET /auth test', ()=> {
     const LOGOUT_ROUTE = '/api/auth/logout';
     const LOGIN_ROUTE = '/api/auth/login';
+    const AUTHENTICATED_ROUTE = '/api/auth/authenticated';
+    const CLEANUP_ROUTE = '/api/auth/cleanUp';
+    const USER_INFO_ROUTE = '/api/auth/userInfo';
     const mockLoginResult = { name: 'Test', lastName: 'User', tokens: {}, email: 'test@example.org', idp: NIH };
 
     afterEach(() => {
@@ -82,5 +136,117 @@ describe('GET /auth test', ()=> {
             .send({code: 'code', IDP: RAS})
             .expect(200);
         expect(rasClient.login).toBeCalledTimes(1);
+    });
+
+    test('auth login propagates provider statusCode', async () => {
+        const nihClient = require('../idps/nih');
+        nihClient.login.mockRejectedValue({ statusCode: 401, message: 'Unauthorized' });
+
+        const response = await request(app)
+            .post(LOGIN_ROUTE)
+            .send({ code: 'code', IDP: NIH });
+
+        expect(response.status).toBe(401);
+        expect(response.body).toEqual({ error: 'Unauthorized' });
+    });
+
+    test('authenticated returns false when session has no user/tokens', async () => {
+        const response = await request(app)
+            .post(AUTHENTICATED_ROUTE)
+            .send({});
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ status: false });
+    });
+
+    test('authenticated returns true when provider validates session', async () => {
+        const nihClient = require('../idps/nih');
+        nihClient.authenticated.mockResolvedValue(true);
+
+        const response = await request(app)
+            .post(AUTHENTICATED_ROUTE)
+            .set('x-test-session', JSON.stringify({
+                userInfo: { idp: NIH },
+                tokens: { accessToken: 'token' }
+            }))
+            .send({});
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ status: true });
+        expect(nihClient.authenticated).toBeCalledTimes(1);
+    });
+
+    test('authenticated returns false when provider returns false', async () => {
+        const nihClient = require('../idps/nih');
+        nihClient.authenticated.mockResolvedValue(false);
+
+        const response = await request(app)
+            .post(AUTHENTICATED_ROUTE)
+            .set('x-test-session', JSON.stringify({
+                userInfo: { idp: NIH },
+                tokens: { accessToken: 'token' }
+            }))
+            .send({});
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ status: false });
+    });
+
+    test('cleanup returns service status', async () => {
+        const { checkTokenAndClean } = require('../services/clean-events.js');
+        checkTokenAndClean.mockResolvedValueOnce('Database Wiped successfully');
+
+        const response = await request(app)
+            .post(CLEANUP_ROUTE)
+            .send({});
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ status: 'Database Wiped successfully' });
+    });
+
+    test('cleanup returns 500 when cleanup throws', async () => {
+        const { checkTokenAndClean } = require('../services/clean-events.js');
+        checkTokenAndClean.mockRejectedValueOnce(new Error('cleanup failed'));
+
+        const response = await request(app)
+            .post(CLEANUP_ROUTE)
+            .send({});
+
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('errors');
+    });
+
+    test('userInfo returns 404 when session userInfo is not found', async () => {
+        const response = await request(app)
+            .get(USER_INFO_ROUTE)
+            .set('x-test-session-id', 'missing-session');
+
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({ error: 'User info not found' });
+    });
+
+    test('userInfo returns 200 when session userInfo exists', async () => {
+        const { mySQLOps } = require('../services/mySQL/mySQL-operations.js');
+        const expectedUserInfo = { email: 'user@example.org', IDP: 'ras' };
+        mySQLOps.getSessionData.mockResolvedValueOnce({ userInfo: expectedUserInfo });
+
+        const response = await request(app)
+            .get(USER_INFO_ROUTE)
+            .set('x-test-session-id', 'existing-session');
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual({ userInfo: expectedUserInfo });
+    });
+
+    test('userInfo returns 500 when session data access fails', async () => {
+        const { mySQLOps } = require('../services/mySQL/mySQL-operations.js');
+        mySQLOps.getSessionData.mockRejectedValueOnce(new Error('db unavailable'));
+
+        const response = await request(app)
+            .get(USER_INFO_ROUTE)
+            .set('x-test-session-id', 'error-session');
+
+        expect(response.status).toBe(500);
+        expect(response.body).toEqual({ error: 'Failed to retrieve userInfo' });
     });
 });

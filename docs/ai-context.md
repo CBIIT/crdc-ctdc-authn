@@ -15,7 +15,7 @@
 - Token and auth checks: `services/token-service.js`, `services/authenticatation-service.js`
 - RAS token and passport flow: `services/ras-auth.js`, `idps/ras.js`
 - Data operations: `services/mySQL/mySQL-operations.js`, `services/mysql-connection.js`
-- User/passport logic: `services/user-service.js`
+- User/session retrieval logic: `services/user-service.js`
 - Event writes: `neo4j/event-service.js`, `bento-event-logging/**`
 
 ## Runtime Facts (Observed)
@@ -23,8 +23,8 @@
 - `app.js` mounts auth routes at `/api/auth` and configures CORS, JSON parsing, cookies, logging, and session middleware.
 - `routes/auth.js` instantiates route-level services only when `DATABASE_TYPE=MYSQL`; otherwise it throws.
 - Session persistence uses `express-mysql-session` with expiration from `SESSION_TIMEOUT`.
-- Passport retrieval (`GET /api/auth/userInfo`) resolves current session and fetches passport by `(email, IDP)`.
-- RAS refresh (`POST /api/auth/refresh`) calls refresh endpoint, userinfo endpoint, passport validation, and updates session tokens in MySQL.
+- User info retrieval (`GET /api/auth/userInfo`) resolves current session and returns `sessionData.userInfo`.
+- Current runtime routes do not include `POST /api/auth/refresh`.
 
 ## Conventions And Patterns
 

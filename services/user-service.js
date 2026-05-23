@@ -32,35 +32,23 @@ class UserService{
         });
     }
 
-    async getPassportBySession(sessionId) {
+    async getUserInfo(sessionId) {
         if (!sessionId) {
             return null;
         }
-        if (typeof this.dataService.getSessionTokens !== 'function') {
+        if (typeof this.dataService.getSessionData !== 'function') {
             throw new Error('Session retrieval service is not configured');
-        }
-        if (typeof this.dataService.getPassportByEmail !== 'function') {
-            throw new Error('Passport retrieval service is not configured');
         }
 
         try {
             // Get session data to extract email and IDP
-            const sessionData = await this.dataService.getSessionTokens(sessionId);
+            const sessionData = await this.dataService.getSessionData(sessionId);
             
             if (!sessionData || !sessionData.userInfo) {
                 return null;
             }
-
-            const { email, IDP } = sessionData.userInfo;
-            
-            if (!email || !IDP) {
-                return null;
-            }
-
-            // Retrieve passport using email and IDP
-            const passport = await this.dataService.getPassportByEmail(email, IDP);
-            
-            return passport;
+          
+            return sessionData.userInfo;
         } catch (error) {
             throw error;
         }
