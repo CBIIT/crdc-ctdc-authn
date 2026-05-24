@@ -504,6 +504,172 @@ curl --location 'https://stsstg.nih.gov/connect/session/logout' \
 --data-urlencode 'client_id={client_id}' \
 --data-urlencode 'client_secret={client_secret}' \
 --data-urlencode 'id_token={id_token}'
+
+
+
+## Decode Passport and Find dbGaP Permissions
+
+After successfully calling the RAS `userinfo` endpoint, the response includes a `passport_jwt_v11` field.
+
+The `passport_jwt_v11` value is a JWT. Decode this JWT to access the GA4GH Passport payload.
+
+### Example `userinfo` Response
+
+```json
+{
+  "sub": "KJz6Lqlsn0mNWHxsOZMTjpw8IfCcoQY2ibI2VyiZuXU",
+  "name": "VERONICA PERSINGER",
+  "first_name": "VERONICA",
+  "last_name": "PERSINGER",
+  "preferred_username": "ngxms-100005464@id.me",
+  "userid": "ngxms-100005464",
+  "email": "jonkiky@gmail.com",
+  "company": "ID.me",
+  "source": "ID.me",
+  "federated_identities_ial2": {
+    "default_identity": "ngxms-100005464@id.me",
+    "authenticated_identity": "ngxms-100005464@id.me",
+    "sources": {
+      "id.me": {
+        "identity_username": "ngxms-100005464@id.me",
+        "ial": 2,
+        "identity_sub": "KJz6Lqlsn0mNWHxsOZMTjpw8IfCcoQY2ibI2VyiZuXU"
+      },
+      "era": {
+        "identity_username": "cheny_pi@era.nih.gov",
+        "ial": 2,
+        "identity_sub": "n3hgL68Iug1MbNs3SFOHUrawOChHgIYI-Mn3u3Dv3C4"
+      }
+    },
+    "identities": {
+      "id.me": {
+        "mail": "jonkiky@gmail.com",
+        "userid": "ngxms-100005464",
+        "firstname": "VERONICA",
+        "lastname": "PERSINGER"
+      },
+      "era": {
+        "mail": "yizhen.chen@nih.gov",
+        "userid": "cheny_pi",
+        "firstname": "VERONICA",
+        "lastname": "Yizhen"
+      }
+    }
+  },
+  "txn": "26224b06d0cb89d2.b43d6a82b3c4b32f",
+  "passport_jwt_v11": "<passport_jwt_v11>"
+}
+```
+
+### Example Decoded `passport_jwt_v11` Payload
+
+```json
+{
+  "sub": "KJz6Lqlsn0mNWHxsOZMTjpw8IfCcoQY2ibI2VyiZuXU",
+  "jti": "f788dde3-578b-4b3e-a279-74b9ab808415",
+  "scope": "openid ga4gh_passport_v1",
+  "txn": "26224b06d0cb89d2.b43d6a82b3c4b32f",
+  "iss": "https://stsstg.nih.gov",
+  "iat": 1779480532,
+  "exp": 1779523732,
+  "ga4gh_passport_v1": [
+    "<token1>",
+    "<token2>"
+  ]
+}
+```
+
+The `ga4gh_passport_v1` field contains an array of JWT visa tokens. Each token should be decoded and inspected.
+
+For dbGaP permissions, decode the visa token that contains the `ras_dbgap_permissions` field. In the example above, this is the second token in the `ga4gh_passport_v1` array.
+
+### Example Decoded dbGaP Visa Token
+
+```json
+{
+  "iss": "https://stsstg.nih.gov",
+  "sub": "KJz6Lqlsn0mNWHxsOZMTjpw8IfCcoQY2ibI2VyiZuXU",
+  "iat": 1779480532,
+  "exp": 1779523732,
+  "scope": "openid ga4gh_passport_v1",
+  "jti": "48865556-a078-4db5-9446-1a967230ff5a",
+  "txn": "26224b06d0cb89d2.b43d6a82b3c4b32f",
+  "ga4gh_visa_v1": {
+    "type": "https://ras.nih.gov/visas/v1.1",
+    "asserted": 1779480532,
+    "value": "https://stsstg.nih.gov/passport/dbgap/v1.1",
+    "source": "https://ncbi.nlm.nih.gov/gap",
+    "by": "dac"
+  },
+  "ras_dbgap_permissions": [
+    {
+      "consent_name": "Fake Consent 1",
+      "phs_id": "phs000000",
+      "version": "v0",
+      "participant_set": "p1",
+      "consent_group": "c1",
+      "role": "designated user",
+      "expiration": 1800115980
+    }
+  ]
+}
+```
+
+## Permission Lookup Logic
+
+To find the user's dbGaP permissions:
+
+1. Read `passport_jwt_v11` from the `userinfo` response.
+2. Decode `passport_jwt_v11`.
+3. Read the `ga4gh_passport_v1` array from the decoded passport payload.
+4. Decode each JWT in the `ga4gh_passport_v1` array.
+5. Find the token that contains the `ras_dbgap_permissions` field.
+6. Read the permissions from `ras_dbgap_permissions`.
+
+Each item in `ras_dbgap_permissions` represents one dbGaP permission grant.
+
+### Permission Fields
+
+| Field | Description |
+| --- | --- |
+| `phs_id` | dbGaP study accession ID |
+| `consent_name` | Consent group name |
+| `version` | Study version |
+| `participant_set` | Participant set |
+| `consent_group` | Consent group ID |
+| `role` | User's role for this permission |
+| `expiration` | Unix timestamp when this permission expires |
+
+## Example Permission Check
+
+A user has access to a study if a decoded visa token contains a matching permission in `ras_dbgap_permissions`.
+
+For example, to check whether the user has access to `phs000000`:
+
+```pseudo
+userinfo_response = call_userinfo_endpoint()
+
+passport_jwt = userinfo_response["passport_jwt_v11"]
+passport_payload = decode_jwt(passport_jwt)
+
+visa_tokens = passport_payload["ga4gh_passport_v1"]
+
+for token in visa_tokens:
+    visa_payload = decode_jwt(token)
+
+    if "ras_dbgap_permissions" in visa_payload:
+        permissions = visa_payload["ras_dbgap_permissions"]
+
+        for permission in permissions:
+            if permission["phs_id"] == "phs000000":
+                return true
+
+return false
+```
+
+The application should also check the permission `expiration` value to make sure the grant is still valid.
+
+
   
 # Reference
 
