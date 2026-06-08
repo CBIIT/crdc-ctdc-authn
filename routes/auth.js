@@ -95,8 +95,10 @@ router.post('/logout', async function (req, res, next) {
 // Return {status: true} or {status: false}
 //Calling this API will refresh the session
 router.post('/authenticated', async function (req, res) {
-    logger.debug(`[${req.method}] ${req.path} - Checking authentication status`);
+    logger.info(`[${req.method}] ${req.path} - Checking authentication status`);
     try {
+        logger.info('Processing authentication check');
+        logger.info(`Session data: ${JSON.stringify(req.session)}`);
         if (!req?.session?.userInfo || !req?.session?.tokens) {
             logger.info('Authentication check: false');
             return res.status(200).send({ status : false });

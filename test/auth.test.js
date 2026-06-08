@@ -209,7 +209,7 @@ describe('GET /auth test', () => {
     const response = await request(app)
       .post(AUTHENTICATED_ROUTE)
       .set('x-test-session', JSON.stringify({
-        userInfo: { idp: NIH },
+        userInfo: { IDP: NIH },
         tokens: { accessToken: 'token' }
       }))
       .send({});
@@ -226,7 +226,7 @@ describe('GET /auth test', () => {
     const response = await request(app)
       .post(AUTHENTICATED_ROUTE)
       .set('x-test-session', JSON.stringify({
-        userInfo: { idp: NIH },
+        userInfo: { IDP: NIH },
         tokens: { accessToken: 'token' }
       }))
       .send({});

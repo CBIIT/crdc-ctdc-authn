@@ -38,11 +38,11 @@ const client = {
 
     authenticated: async (tokens) => {
         try {
-            if (!tokens?.accessToken) {
+            if (!tokens?.access_token) {
                 logger.warn("RAS authentication check: no token bundle found");
                 return false;
             }
-            const user = await rasUserInfo(tokens.accessToken);
+            const user = await rasUserInfo(tokens.access_token);
             const isValid = await validateRASPassport(user?.passport_jwt_v11);
             return isValid;
         } catch (error) {

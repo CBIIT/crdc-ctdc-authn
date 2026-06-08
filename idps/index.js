@@ -31,11 +31,11 @@ const oauth2Client = {
     },
     authenticated: async (userSession, tokens, fileAcl) => {
         // Check Valid Token
-        if (isCaseInsensitiveEqual(userSession.idp,GOOGLE)) {
+        if (isCaseInsensitiveEqual(userSession.IDP,GOOGLE)) {
             return await googleClient.authenticated(tokens);
-        } else if (isCaseInsensitiveEqual(userSession.idp,NIH)) {
+        } else if (isCaseInsensitiveEqual(userSession.IDP,NIH)) {
             return await nihClient.authenticated(tokens);
-        } else if (isCaseInsensitiveEqual(userSession.idp,RAS)) {
+        } else if (isCaseInsensitiveEqual(userSession.IDP,RAS)) {
           return await rasClient.authenticated(tokens);
         }
         return false;
