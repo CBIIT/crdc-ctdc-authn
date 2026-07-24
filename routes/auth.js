@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const logger = require('winston');
+const logger = require('../logger');
+const { logAuditEvent } = require('../logger');
 const idpClient = require('../idps');
 const config = require('../config');
 const {logout} = require('../controllers/auth-api')
@@ -52,8 +53,23 @@ router.post('/login', async function (req, res) {
                 logger.warn("Login: userInfo missing or firstName not set"); 
                 return 
             }
+            // Extract NIH CADR fields from IDP userInfo payload for audit logging
+            const nihFields = {
+                user_name: `${name} ${lastName}`.trim() || undefined,
+                transaction_number: userInfo?.txn || undefined,
+                user_org: userInfo?.organization || userInfo?.affiliated_institution || undefined,
+                eRA_commons_id: userInfo?.eRA_commons_id || userInfo?.era_commons_id || undefined,
+                user_permission_group: userInfo?.user_permission_group || undefined,
+                user_country_name: userInfo?.country || undefined,
+            };
             await eventService.storeLoginEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
-            logger.info(`Login successful for user: ${email}`);
+            logAuditEvent('info', 'Login', {
+                user_id: req.session.userInfo.firstName,
+                user_email: email,
+                user_id_provider: idp,
+                status: 200,
+                ...nihFields,
+            }, req);
         }   
         catch (err){
             logger.error(`Failed to store login event: ${err.message}`);
@@ -63,7 +79,10 @@ router.post('/login', async function (req, res) {
         res.json({name, email, "timeout": config.session_timeout / 1000});
     } catch (e) {
         const statusCode = e.code && parseInt(e.code) ? parseInt(e.code) : (e.statusCode && parseInt(e.statusCode) ? parseInt(e.statusCode) : 500);
-        logger.error(`Login failed with status ${statusCode}: ${e.message}`);
+        logAuditEvent('error', 'Login', {
+            status: statusCode,
+            message: e.message,
+        }, req);
         res.status(statusCode);
         res.json({error: e.message});
     }
@@ -81,11 +100,17 @@ router.post('/logout', async function (req, res, next) {
             return logout(req, res);
         }
         await eventService.storeLogoutEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
-        logger.info(`Logout successful for user: ${req.session.userInfo.email}`);
+        logAuditEvent('info', 'Logout', {
+            user_id: req.session.userInfo.firstName,
+            user_email: req.session.userInfo.email,
+            user_id_provider: req.session.userInfo.IDP,
+            user_name: `${req.session.userInfo.firstName || ''} ${req.session.userInfo.lastName || ''}`.trim() || undefined,
+            status: 200,
+        }, req);
         // Remove User Session
         return logout(req, res);
          } catch (e) {
-            logger.error(`Logout failed: ${e.message}`);
+            logAuditEvent('error', 'Logout', { status: 500, message: e.message }, req);
             res.status(500).json({errors: e});
         }
  
