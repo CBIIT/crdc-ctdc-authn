@@ -1,4 +1,3 @@
-const newrelic = require('newrelic');
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -13,13 +12,14 @@ const cookieParser = require('cookie-parser');
 console.log(config);
 
 const LOG_FOLDER = 'logs';
-if (!fs.existsSync(LOG_FOLDER)) {
-  fs.mkdirSync(LOG_FOLDER);
+let accessLogStream = process.stdout;
+try {
+  fs.mkdirSync(LOG_FOLDER, { recursive: true });
+  accessLogStream = fs.createWriteStream(path.join(__dirname, LOG_FOLDER, 'access.log'), { flags: 'a' });
+} catch (err) {
+  logger.warn(`Unable to create log directory "${LOG_FOLDER}", falling back to stdout: ${err.message}`);
 }
 
-
-// create a write stream (in append mode)
-const accessLogStream = fs.createWriteStream(path.join(__dirname, LOG_FOLDER, 'access.log'), { flags: 'a'})
 
 var authRouter = require('./routes/auth');
 var app = express();
