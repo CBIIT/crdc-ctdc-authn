@@ -1,8 +1,13 @@
 const app = require("../app");
 const config = require("../config");
 const request = require("supertest");
+const { closeSessionStore } = require("../services/session");
 
 describe("GET /health test", () => {
+  afterAll(async () => {
+    await closeSessionStore();
+  });
+
   test(`ping`, async () => {
     const res = await request(app).get("/api/auth/ping").expect(200);
     expect(res.text).toBe("pong");
