@@ -23,15 +23,15 @@
     "express-session": "^1.17.3",
     "googleapis": "^152.0.0",
     "http-errors": "~1.6.3",
-    "http-proxy-middleware": "^4.0.0",
+    "http-proxy-middleware": "^4.1.1",
     "jsonwebtoken": "^9.0.0",
     "jwa": "^1.4.1",
-    "morgan": "^1.10.1",
+    "morgan": "^1.11.0",
     "mysql": "^2.18.1",
     "mysql2": "^3.11.3",
     "neo4j-driver": "^5.5.0",
     "node-fetch": "^2.6.9",
-    "nodemailer": "^8.0.7",
+    "nodemailer": "^9.0.1",
     "underscore": "^1.13.6",
     "uuid": "^11.1.1",
     "winston": "^3.19.0"
@@ -42,14 +42,22 @@
     "supertest": "^7.2.2"
   },
   "overrides": {
-    "brace-expansion": "^2.0.3",
+    "brace-expansion": "^2.1.4",
     "picomatch": "^4.0.4",
-    "ip-address": "^10.1.1"
+    "ip-address": "^10.3.1",
+    "body-parser": "1.20.6",
+    "form-data": "4.0.6",
+    "js-yaml": "3.15.1",
+    "@babel/core": "7.29.7"
   },
   "comments": {
     "overrides": "Security fixes for transitive dependencies",
-    "brace-expansion": "CVE-2026-33750 (HIGH) - DoS via zero-step sequences. Fixed in v2.0.3+",
+    "brace-expansion": "CVE-2026-69152 (HIGH) - DoS via unbounded intermediate arrays. Fixed in v2.1.4+",
     "picomatch": "CVE-2026-33672, CVE-2026-33671 (LOW) - Method injection and ReDoS. Fixed in v4.0.4+",
-    "ip-address": "CVE-2026-42338 (MEDIUM) - XSS in Address6 methods. Fixed in v10.1.1+"
+    "ip-address": "CVE-2026-69192 (HIGH) - Address4 leading-zero parsing can bypass SSRF checks. Fixed in v10.3.1+",
+    "body-parser": "GHSA-v422-hmwv-36x6 (LOW) - size enforcement bypass. Fixed in v1.20.6+",
+    "form-data": "GHSA-hmw2-7cc7-3qxx (HIGH) - CRLF injection. Fixed in v4.0.6+",
+    "js-yaml": "GHSA-5p4m-2wfm-xmqj (HIGH) - quadratic CPU consumption. Fixed in v3.15.1+",
+    "@babel/core": "GHSA-4x5r-pxfx-6jf8 (LOW) - arbitrary file read via sourceMappingURL. Fixed in v7.29.7+"
   }
 }
