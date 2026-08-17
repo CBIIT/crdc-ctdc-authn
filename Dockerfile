@@ -6,7 +6,7 @@ WORKDIR /usr/src/app
 # Upgrade npm to latest version to fix bundled vulnerabilities
 RUN npm install -g npm@11.14.1
 
-COPY package.json ./
+COPY package.json package-lock.json ./
 # Use npm install instead of npm ci to apply npm overrides for transitive dependency CVE fixes
 RUN npm install --omit=dev --ignore-scripts
 
