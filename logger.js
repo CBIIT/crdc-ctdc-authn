@@ -1,4 +1,6 @@
 const winston = require('winston');
+const { isCaseInsensitiveEqual } = require('./util/string-util');
+const { RAS } = require('./constants/idp-constants');
 
 const APP_NAME = process.env.APP_NAME || 'CTDC-AuthN';
 const CADR_NAME = process.env.CADR_NAME || 'Cancer Data Service';
@@ -75,6 +77,58 @@ function logAuditEvent(level, eventType, eventData, req) {
     });
 }
 
+const NA = 'N/A';
+
+/**
+ * Log the verbose NIH CADR field-by-field audit trail for an auth event.
+ * Falls back to "N/A" whenever `req` or `userInfo` (or a specific field on them) is unavailable.
+ * @param {string} eventType - e.g. 'Authentication', 'Logout'
+ * @param {object} [options]
+ * @param {object} [options.req] - Express request object
+ * @param {object} [options.userInfo] - IDP user info payload
+ * @param {string} [options.idp] - Identity provider name
+ * @param {number|string} [options.statusCode] - HTTP status code to report as the outcome
+ */
+function logNihCadrFields(eventType, { req, userInfo, idp, statusCode = 200 } = {}) {
+    // NIH CADR field-by-field logging only applies to the RAS identity provider
+    if (!isCaseInsensitiveEqual(idp, RAS)) return;
+
+    const safeReq = req || {};
+    const safeUserInfo = userInfo || {};
+    const headers = safeReq.headers || {};
+    // winston's format chain has no splat(), so values must be inlined in the message string
+    const log = (label, value) => winston.info(`${label}: ${value}`);
+    log('Event Type Starts =======================================================', eventType);
+    log('NIH User ID', safeUserInfo.sub ?? NA);
+    log('Transaction Number', safeUserInfo.txn ?? NA);
+    log('Data Repository accessed', NA);
+    log('Study/Data set accessed', NA);
+    log('Date/Time of access', new Date().toISOString());
+    log('Source IP address of the connection', safeReq.ip ?? NA);
+    log('Destination IP address of the connection', NA);
+    log('Destination port of the connection', NA);
+    log('Identifies the users first name and last name associated with the event', `${safeUserInfo.first_name ?? NA} ${safeUserInfo.last_name ?? NA}`);
+    log('NIH, Login.gov, RAS or other providers', `${idp ?? NA} ${safeUserInfo.source ?? NA}`);
+    log('Unique session identifier', safeReq.sessionID ?? NA);
+    log('The requested URL', safeReq.originalUrl ?? NA);
+    log('The application or service accessed', 'ctdc-auth-service');
+    log('Browser or client application making the request', headers['user-agent'] ?? NA);
+    log('Outcome of the action (e.g., HTTP status code)', String(statusCode));
+    log('Content type of the HTTP response', headers['content-type'] ?? NA);
+    log('Number of bytes transferred', headers['content-length'] ?? NA);
+    log('Duration of the connection', NA);
+    log('NIH ICO', 'N/A');
+    log('CADR Name', 'CTDC(Clinical and Translational Data Commons)');
+    log('User Country Name', NA);
+    log("Name of the user's institution affiliation", NA);
+    log("User's Email address", safeUserInfo.email ?? NA);
+    log('eRA Commons ID', safeUserInfo.federated_identities_ial2?.identities?.era?.userid ?? NA);
+    log('User Permission Group', 'dbGaP Authorized User');
+    log('user_id', safeUserInfo.sub ?? NA);
+    log('Event Type ends =======================================================', eventType);
+}
+
 module.exports = winston;
 module.exports.logAuditEvent = logAuditEvent;
 module.exports.extractRequestContext = extractRequestContext;
+module.exports.logNihCadrFields = logNihCadrFields;

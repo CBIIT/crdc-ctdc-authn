@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const logger = require('../logger');
-const { logAuditEvent } = require('../logger');
+const { logAuditEvent, logNihCadrFields } = require('../logger');
 const idpClient = require('../idps');
 const config = require('../config');
 const {logout} = require('../controllers/auth-api')
@@ -48,10 +48,11 @@ router.post('/login', async function (req, res) {
         };
         req.session.userInfo = formatVariables(req.session.userInfo, ["IDP"], formatMap);
        
+
+        
         try{
             if (!req.session?.userInfo || !req.session.userInfo?.firstName){
                 logger.warn("Login: userInfo missing or firstName not set"); 
-                return 
             }
             // Extract NIH CADR fields from IDP userInfo payload for audit logging
             const nihFields = {
@@ -62,6 +63,9 @@ router.post('/login', async function (req, res) {
                 user_permission_group: userInfo?.user_permission_group || undefined,
                 user_country_name: userInfo?.country || undefined,
             };
+
+            logNihCadrFields('Authentication', { req, userInfo, idp, statusCode: 200 });
+
             await eventService.storeLoginEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
             logAuditEvent('info', 'Login', {
                 user_id: req.session.userInfo.firstName,
@@ -70,15 +74,19 @@ router.post('/login', async function (req, res) {
                 status: 200,
                 ...nihFields,
             }, req);
+            logger.info('Outcome of the action (e.g., HTTP status code)   ', '200');
+            
         }   
         catch (err){
             logger.error(`Failed to store login event: ${err.message}`);
+            logger.info('Outcome of the action (e.g., HTTP status code)   ', '500');
         }
 
         req.session.tokens = tokens;
         res.json({name, email, "timeout": config.session_timeout / 1000});
     } catch (e) {
         const statusCode = e.code && parseInt(e.code) ? parseInt(e.code) : (e.statusCode && parseInt(e.statusCode) ? parseInt(e.statusCode) : 500);
+        logNihCadrFields('Authentication', { req, statusCode });
         logAuditEvent('error', 'Login', {
             status: statusCode,
             message: e.message,
@@ -99,6 +107,9 @@ router.post('/logout', async function (req, res, next) {
             logger.warn("Logout: userInfo not found in session"); 
             return logout(req, res);
         }
+            const userInfo = req.session.userInfo.userInfo;
+            logNihCadrFields('Logout', { req, userInfo, idp, statusCode: 200 });
+
         await eventService.storeLogoutEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
         logAuditEvent('info', 'Logout', {
             user_id: req.session.userInfo.firstName,
@@ -110,6 +121,12 @@ router.post('/logout', async function (req, res, next) {
         // Remove User Session
         return logout(req, res);
          } catch (e) {
+            logNihCadrFields('Logout', {
+                req,
+                userInfo: req.session?.userInfo?.userInfo,
+                idp: req.session?.userInfo?.IDP,
+                statusCode: 500,
+            });
             logAuditEvent('error', 'Logout', { status: 500, message: e.message }, req);
             res.status(500).json({errors: e});
         }
@@ -143,9 +160,16 @@ router.post('/authenticated', async function (req, res) {
         }
 
         logger.info(`Authentication check: ${isAuthenticated}`);
+        logNihCadrFields('Authenticated', {
+            req,
+            userInfo: req.session.userInfo?.userInfo,
+            idp: req.session.userInfo?.IDP,
+            statusCode: 200,
+        });
         res.status(200).send({ status : isAuthenticated });
     } catch (e) {
         logger.error(`Authentication check failed: ${e.message}`);
+        logNihCadrFields('Authenticated', { req, statusCode: 500 });
         res.status(500).json({errors: e});
     }
 });
@@ -185,9 +209,11 @@ router.get('/userInfo', async function (req, res) {
         }
 
         logger.info(`User info retrieval successful for session: ${sessionId}`);
+        logNihCadrFields('UserInfo', { req, userInfo, statusCode: 200 });
         res.status(200).json({ userInfo });
     } catch (error) {
         logger.error(`User info retrieval failed: ${error.message}`);
+        logNihCadrFields('UserInfo', { req, statusCode: 500 });
         res.status(500).json({ error: 'Failed to retrieve userInfo' });
     }
 });
