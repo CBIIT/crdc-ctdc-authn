@@ -47,40 +47,32 @@ router.post('/login', async function (req, res) {
             userInfo: userInfo
         };
         req.session.userInfo = formatVariables(req.session.userInfo, ["IDP"], formatMap);
-       
 
-        
         try{
             if (!req.session?.userInfo || !req.session.userInfo?.firstName){
                 logger.warn("Login: userInfo missing or firstName not set"); 
             }
-            // Extract NIH CADR fields from IDP userInfo payload for audit logging
-            const nihFields = {
-                user_name: `${name} ${lastName}`.trim() || undefined,
-                transaction_number: userInfo?.txn || undefined,
-                user_org: userInfo?.organization || userInfo?.affiliated_institution || undefined,
-                eRA_commons_id: userInfo?.eRA_commons_id || userInfo?.era_commons_id || undefined,
-                user_permission_group: userInfo?.user_permission_group || undefined,
-                user_country_name: userInfo?.country || undefined,
-            };
-
+           
+            logger.info('login successful - Extract NIH CADR fields from IDP userInfo payload for audit logging');
             logNihCadrFields('Authentication', { req, userInfo, idp, statusCode: 200 });
-
+            logger.info(' Storing login event in the database');
             await eventService.storeLoginEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
-         
-            logger.info('Outcome of the action (e.g., HTTP status code)   ', '200');
-            
+            logger.info(' Storing login event in the database - completed successfully');
         }   
         catch (err){
             logger.error(`Failed to store login event: ${err.message}`);
-            logger.info('Outcome of the action (e.g., HTTP status code)   ', '500');
+            logger.info('Outcome of the action (e.g., HTTP status code):500 ');
         }
 
         req.session.tokens = tokens;
+        logger.info('login successful - returning user info');
         res.json({name, email, "timeout": config.session_timeout / 1000});
+
     } catch (e) {
         const statusCode = e.code && parseInt(e.code) ? parseInt(e.code) : (e.statusCode && parseInt(e.statusCode) ? parseInt(e.statusCode) : 500);
+        logger.info('login failed - Extract NIH CADR fields from IDP userInfo payload for audit logging');
         logNihCadrFields('Authentication', { req, statusCode });
+        logger.info('login failed - returning error response', e.message);
         res.status(statusCode);
         res.json({error: e.message});
     }
@@ -96,21 +88,23 @@ router.post('/logout', async function (req, res, next) {
         if (!req.session?.userInfo){
             logger.warn("Logout: userInfo not found in session"); 
             return logout(req, res);
-        }
-            const userInfo = req.session.userInfo.userInfo;
-            logNihCadrFields('Logout', { req, userInfo, idp, statusCode: 200 });
-
+        }   
+                   const userInfo = req.session.userInfo.userInfo;
+            
         await eventService.storeLogoutEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
         // Remove User Session
+          logger.info('logout initiated - successfully found userInfo in session ');
+          logNihCadrFields('Logout', { req, userInfo, idp, statusCode: 200 });
         return logout(req, res);
          } catch (e) {
+            logger.info('logout failed - Extract NIH CADR fields from IDP userInfo payload for audit logging');
             logNihCadrFields('Logout', {
                 req,
                 userInfo: req.session?.userInfo?.userInfo,
                 idp: req.session?.userInfo?.IDP,
                 statusCode: 500,
             });
-            logAuditEvent('error', 'Logout', { status: 500, message: e.message }, req);
+            logger.info('logout failed - returning error response', e.message);
             res.status(500).json({errors: e});
         }
  
@@ -128,12 +122,13 @@ router.post('/authenticated', async function (req, res) {
             logger.info('Authentication check: false');
             return res.status(200).send({ status : false });
         }
-
+        logger.info('authentication check - processing through idpClient.authenticated(),using tokens from session to verify authentication status');
         const authResult = await idpClient.authenticated(req.session.userInfo, req.session.tokens);
         const isAuthenticated = typeof authResult === 'object'
             ? Boolean(authResult.isAuthenticated)
             : Boolean(authResult);
-
+        logger.info('authentication check - authResult from idpClient.authenticated()');
+       
         if (typeof authResult === 'object' && authResult.tokens) {
             req.session.tokens = authResult.tokens;
         }
@@ -143,6 +138,7 @@ router.post('/authenticated', async function (req, res) {
         }
 
         logger.info(`Authentication check: ${isAuthenticated}`);
+        logger.info(`Extract NIH CADR fields from IDP userInfo payload for audit logging`);
         logNihCadrFields('Authenticated', {
             req,
             userInfo: req.session.userInfo?.userInfo,
@@ -174,7 +170,7 @@ router.post('/cleanUp', async function (req, res) {
 /* Get User Info */
 // Returns the authenticated user's stored GA4GH Passport JWT
 router.get('/userInfo', async function (req, res) {
-    logger.debug(`[${req.method}] ${req.path} - User info retrieval request`);
+    logger.info(`[${req.method}] ${req.path} - User info retrieval request`);
     try {
         // Extract session ID from Express session
         const sessionId = req.sessionID;

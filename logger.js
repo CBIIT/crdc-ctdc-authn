@@ -99,7 +99,7 @@ function logNihCadrFields(eventType, { req, userInfo, idp, statusCode = 200 } = 
     const headers = safeReq.headers || {};
     // winston's format chain has no splat(), so values must be inlined in the message string
    
-    log('Event Type Starts =======================================================', eventType);
+    log('Event Type ', eventType);
     log('NIH User ID', safeUserInfo.sub ?? NA);
     log('Transaction Number', safeUserInfo.txn ?? NA);
     log('Data Repository accessed', NA);
@@ -119,14 +119,13 @@ function logNihCadrFields(eventType, { req, userInfo, idp, statusCode = 200 } = 
     log('Number of bytes transferred', headers['content-length'] ?? NA);
     log('Duration of the connection', NA);
     log('NIH ICO', 'N/A');
-    log('CADR Name', 'CTDC(Clinical and Translational Data Commons)');
+    log('CADR Name', 'CTDC (Clinical and Translational Data Commons)');
     log('User Country Name', NA);
     log("Name of the user's institution affiliation", NA);
     log("User's Email address", safeUserInfo.email ?? NA);
     log('eRA Commons ID', safeUserInfo.federated_identities_ial2?.identities?.era?.userid ?? NA);
     log('User Permission Group', 'dbGaP Authorized User');
     log('user_id', safeUserInfo.sub ?? NA);
-    log('Event Type ends =======================================================', eventType);
 }
 
 module.exports = winston;
