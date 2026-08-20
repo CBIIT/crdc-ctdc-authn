@@ -2,14 +2,16 @@ jest.mock('../../services/ras-auth', () => ({
     getRASTokenBundle: jest.fn(),
     refreshRASTokenBundle: jest.fn(),
     rasUserInfo: jest.fn(),
-    validateRASPassport: jest.fn()
+    validateRASPassport: jest.fn(),
+    rasLogout: jest.fn()
 }));
 
 const {
     getRASTokenBundle,
     refreshRASTokenBundle,
     rasUserInfo,
-    validateRASPassport
+    validateRASPassport,
+    rasLogout
 } = require('../../services/ras-auth');
 
 const rasClient = require('../../idps/ras');
@@ -52,5 +54,21 @@ describe('RAS IDP client', () => {
 
         expect(result).toBe(true);
         expect(refreshRASTokenBundle).not.toHaveBeenCalled();
+    });
+
+    test('logout sends id_token to RAS logout helper', async () => {
+        rasLogout.mockResolvedValue(true);
+
+        const result = await rasClient.logout({ id_token: 'id-token' });
+
+        expect(rasLogout).toHaveBeenCalledWith('id-token');
+        expect(result).toBe(true);
+    });
+
+    test('logout skips RAS logout when id_token is missing', async () => {
+        const result = await rasClient.logout({ access_token: 'access-token' });
+
+        expect(rasLogout).not.toHaveBeenCalled();
+        expect(result).toBe(false);
     });
 });

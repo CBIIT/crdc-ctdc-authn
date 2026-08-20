@@ -44,6 +44,11 @@ const oauth2Client = {
         if (isCaseInsensitiveEqual(idp,NIH) || isCaseInsensitiveEqual(idp,LOGIN_GOV)) {
             return nihClient.logout(tokens);
         }
+
+        // RAS logout must also clear the upstream NIH/RAS browser session.
+        if (isCaseInsensitiveEqual(idp,RAS)) {
+            return rasClient.logout(tokens);
+        }
     }
 }
 
