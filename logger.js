@@ -89,6 +89,8 @@ const NA = 'N/A';
  * @param {number|string} [options.statusCode] - HTTP status code to report as the outcome
  */
 function logNihCadrFields(eventType, { req, userInfo, idp, statusCode = 200 } = {}) {
+    const log = (label, value) => winston.info(`${label}: ${value}`);
+    log("logNihCadrFields idp", idp);
     // NIH CADR field-by-field logging only applies to the RAS identity provider
     if (!isCaseInsensitiveEqual(idp, "RAS")) return;
 
@@ -96,7 +98,7 @@ function logNihCadrFields(eventType, { req, userInfo, idp, statusCode = 200 } = 
     const safeUserInfo = userInfo || {};
     const headers = safeReq.headers || {};
     // winston's format chain has no splat(), so values must be inlined in the message string
-    const log = (label, value) => winston.info(`${label}: ${value}`);
+   
     log('Event Type Starts =======================================================', eventType);
     log('NIH User ID', safeUserInfo.sub ?? NA);
     log('Transaction Number', safeUserInfo.txn ?? NA);
