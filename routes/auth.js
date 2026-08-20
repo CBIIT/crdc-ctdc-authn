@@ -67,13 +67,7 @@ router.post('/login', async function (req, res) {
             logNihCadrFields('Authentication', { req, userInfo, idp, statusCode: 200 });
 
             await eventService.storeLoginEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
-            logAuditEvent('info', 'Login', {
-                user_id: req.session.userInfo.firstName,
-                user_email: email,
-                user_id_provider: idp,
-                status: 200,
-                ...nihFields,
-            }, req);
+         
             logger.info('Outcome of the action (e.g., HTTP status code)   ', '200');
             
         }   
@@ -87,10 +81,6 @@ router.post('/login', async function (req, res) {
     } catch (e) {
         const statusCode = e.code && parseInt(e.code) ? parseInt(e.code) : (e.statusCode && parseInt(e.statusCode) ? parseInt(e.statusCode) : 500);
         logNihCadrFields('Authentication', { req, statusCode });
-        logAuditEvent('error', 'Login', {
-            status: statusCode,
-            message: e.message,
-        }, req);
         res.status(statusCode);
         res.json({error: e.message});
     }
@@ -111,13 +101,6 @@ router.post('/logout', async function (req, res, next) {
             logNihCadrFields('Logout', { req, userInfo, idp, statusCode: 200 });
 
         await eventService.storeLogoutEvent(req.session.userInfo.firstName,req.session.userInfo.email,req.session.userInfo.IDP,config.database_type);
-        logAuditEvent('info', 'Logout', {
-            user_id: req.session.userInfo.firstName,
-            user_email: req.session.userInfo.email,
-            user_id_provider: req.session.userInfo.IDP,
-            user_name: `${req.session.userInfo.firstName || ''} ${req.session.userInfo.lastName || ''}`.trim() || undefined,
-            status: 200,
-        }, req);
         // Remove User Session
         return logout(req, res);
          } catch (e) {
