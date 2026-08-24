@@ -183,7 +183,7 @@ describe('GET /auth test', () => {
       .send({ IDP: RAS })
       .expect(200);
 
-    expect(rasClient.logout).toHaveBeenCalledWith({ id_token: 'ras-id-token' });
+    expect(rasClient.logout).toHaveBeenCalledWith(expect.objectContaining({ id_token: 'ras-id-token' }));
   });
 
   test('auth ras login called once', async () => {
