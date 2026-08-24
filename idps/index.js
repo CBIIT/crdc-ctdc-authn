@@ -45,9 +45,7 @@ const oauth2Client = {
             return nihClient.logout(tokens);
         }
 
-        // RAS logout must also clear the upstream NIH/RAS browser session.
-        if (isCaseInsensitiveEqual(idp,RAS)) {
-            return rasClient.logout(tokens);
+        // RAS logout uses the stored id_token to call the RAS logout endpoint.
         }
     }
 }
