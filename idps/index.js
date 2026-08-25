@@ -40,11 +40,17 @@ const oauth2Client = {
         }
         return false;
     },
-    logout: async(idp, tokens) => {
-        if (isCaseInsensitiveEqual(idp,NIH) || isCaseInsensitiveEqual(idp,LOGIN_GOV)) {
+    logout: async (idp, tokens) => {
+        if (isCaseInsensitiveEqual(idp, NIH) || isCaseInsensitiveEqual(idp, LOGIN_GOV)) {
             return nihClient.logout(tokens);
         }
+
+        if (isCaseInsensitiveEqual(idp, RAS)) {
+            return rasClient.logout(tokens);
+        }
+
+        return false;
     }
-}
+};
 
 module.exports = oauth2Client;

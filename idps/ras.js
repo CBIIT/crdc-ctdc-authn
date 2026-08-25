@@ -52,7 +52,14 @@ const client = {
         return false;
     },
 
-    logout: async(idToken) => {
+    logout: async(tokens) => {
+        // RAS session logout requires the ID token from the stored token bundle.
+        const idToken = typeof tokens === "string" ? tokens : tokens?.id_token;
+        if (!idToken) {
+            logger.warn("RAS logout skipped: no id_token found");
+            return false;
+        }
+
         return await rasLogout(idToken);
     }
 };

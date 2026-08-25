@@ -169,6 +169,23 @@ describe('GET /auth test', () => {
     expect(nihClient.logout).toHaveBeenCalledTimes(1);
   });
 
+  test('auth logout ras', async () => {
+    const rasClient = require('../idps/ras');
+    rasClient.logout.mockResolvedValue();
+    const session = {
+      tokens: { id_token: 'ras-id-token' },
+      userInfo: { firstName: 'Test', email: 'test@example.org', IDP: RAS }
+    };
+
+    await request(app)
+      .post(LOGOUT_ROUTE)
+      .set('x-test-session', JSON.stringify(session))
+      .send({ IDP: RAS })
+      .expect(200);
+
+    expect(rasClient.logout).toHaveBeenCalledWith(expect.objectContaining({ id_token: 'ras-id-token' }));
+  });
+
   test('auth ras login called once', async () => {
     const rasClient = require('../idps/ras');
     rasClient.login.mockResolvedValue(createMockLoginResult(RAS));

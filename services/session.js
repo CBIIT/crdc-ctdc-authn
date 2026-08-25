@@ -27,7 +27,7 @@ function createSession({ sessionSecret, session_timeout } = {}) {
         // rolling: true,
         saveUninitialized: false,
         resave: true,
-                store: new MySQLStore(storeOptions, mysql2PromisePool)
+        store: new MySQLStore(storeOptions, mysql2PromisePool)
     });
 }
 
