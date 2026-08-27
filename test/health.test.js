@@ -1,3 +1,21 @@
+jest.mock("express-mysql-session", () => {
+  return () => class MockMySQLStore {
+    get(sid, callback) {
+      callback(null, {});
+    }
+    set(sid, session, callback) {
+      callback(null);
+    }
+    destroy(sid, callback) {
+      callback(null);
+    }
+    touch(sid, session, callback) {
+      callback(null);
+    }
+    on() {}
+  };
+});
+
 const app = require("../app");
 const config = require("../config");
 const request = require("supertest");
