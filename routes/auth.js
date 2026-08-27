@@ -117,7 +117,7 @@ router.post('/authenticated', async function (req, res) {
     logger.info(`[${req.method}] ${req.path} - Checking authentication status`);
     try {
         logger.info('Processing authentication check');
-        logger.info(`Session data: ${JSON.stringify(req.session)}`);
+        logger.info(`Session context: session_id=${req.sessionID ?? 'N/A'} idp=${req.session?.userInfo?.IDP ?? 'N/A'}`);
         if (!req?.session?.userInfo || !req?.session?.tokens) {
             logger.info('Authentication check: false');
             return res.status(200).send({ status : false });
