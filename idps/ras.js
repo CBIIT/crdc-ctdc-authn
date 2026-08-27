@@ -15,7 +15,7 @@ const client = {
     login: async (code, redirectingURL) => {
         logger.debug("RAS login attempt");
         const rasTokens = await getRASTokenBundle(code, redirectingURL);
-        logger.debug(`RAS tokens received: ${JSON.stringify(rasTokens)}`);
+        logger.debug(`RAS tokens received: `);
         const user = await rasUserInfo(rasTokens.access_token);
         logger.debug(`RAS userinfo received: ${JSON.stringify(user)}`);
         const isValid = await validateRASPassport(user?.passport_jwt_v11);
