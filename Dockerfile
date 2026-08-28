@@ -7,6 +7,7 @@ COPY package.json ./
 # Install production dependencies, then remove npm from the immutable runtime
 RUN npm install --omit=dev --ignore-scripts \
     && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+    && hash -r \
     && test ! -e /usr/local/lib/node_modules/npm \
     && ! command -v npm \
     && ! command -v npx
