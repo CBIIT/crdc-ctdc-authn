@@ -26,7 +26,7 @@
     "http-proxy-middleware": "^4.0.0",
     "jsonwebtoken": "^9.0.0",
     "jwa": "^1.4.1",
-    "morgan": "^1.10.1",
+    "morgan": "^1.11.0",
     "mysql": "^2.18.1",
     "mysql2": "^3.11.3",
     "neo4j-driver": "^5.5.0",
@@ -44,12 +44,19 @@
   "overrides": {
     "brace-expansion": "^2.0.3",
     "picomatch": "^4.0.4",
-    "ip-address": "^10.1.1"
+    "ip-address": "^10.3.1",
+    "body-parser": "1.20.6",
+    "form-data": "4.0.6",
+    "qs": "^6.15.2"
   },
   "comments": {
     "overrides": "Security fixes for transitive dependencies",
     "brace-expansion": "CVE-2026-33750 (HIGH) - DoS via zero-step sequences. Fixed in v2.0.3+",
     "picomatch": "CVE-2026-33672, CVE-2026-33671 (LOW) - Method injection and ReDoS. Fixed in v4.0.4+",
-    "ip-address": "CVE-2026-42338 (MEDIUM) - XSS in Address6 methods. Fixed in v10.1.1+"
+    "ip-address": "CVE-2026-54272, CVE-2026-69198, CVE-2026-69192 - SSRF and trust-boundary bypasses. Fixed in v10.3.1+",
+    "body-parser": "CVE-2026-12590 - invalid limits can disable request-size enforcement. Fixed in v1.20.6+",
+    "form-data": "CVE-2026-12143 - multipart field and filename CRLF injection. Fixed in v4.0.6+",
+    "qs": "CVE-2026-8723 - comma-array stringify denial of service. Fixed in v6.15.2+",
+    "morgan": "CVE-2026-5078 - remote-user log forging. Fixed in v1.11.0+"
   }
 }
