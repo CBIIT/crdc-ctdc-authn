@@ -10,8 +10,6 @@ const connection = mysql.createPool({
     insecureAuth : false,
     multipleStatements: true,
     connectTimeout: 60000, // 60 seconds
-    acquireTimeout: 60000, // 60 seconds
-    timeout: 60000, // 60 seconds
     waitForConnections: true
 });
 
@@ -55,7 +53,7 @@ async function getCreateCommand(userID,eventType) {
         }
     } catch (error) {
         logger.error(`getCreateCommand error: ${error.message}`);
-        currentConnection.release()
+        if (currentConnection) currentConnection.release();
         return -1;
     } finally {
          if (currentConnection) {
@@ -80,7 +78,10 @@ async function getEventAfterTimestamp(timestamp,eventType) {
     let sessionID = 1; // Example sessionID
     if (sessionID !== null) {
         const rows = await new Promise((resolve, reject) => {
-            currentConnection.query("SELECT * FROM eventTable WHERE timestamp > '" + timestamp + "' and eventType = '" + eventType + "' ;", (err, rows) => {
+            currentConnection.query(
+                'SELECT * FROM eventTable WHERE timestamp > ? AND eventType = ?',
+                [timestamp, eventType],
+                (err, rows) => {
                 if (err) reject(err);
                 
                 else resolve(rows);
@@ -175,7 +176,10 @@ async function compareSessionID(sessionID) {
     // let sessionID = getSessionIDFromCookie(req, res);
     if (sessionID !== null ) {
         const rows = await new Promise((resolve, reject) => {
-            currentConnection.query("SELECT session_id FROM sessions where session_id = '" + sessionID + "';", (err, rows) => {
+            currentConnection.query(
+                'SELECT session_id FROM sessions WHERE session_id = ?',
+                [sessionID],
+                (err, rows) => {
                 if (err) reject(err);
                 else resolve(rows);
             });

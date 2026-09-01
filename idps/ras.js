@@ -15,7 +15,7 @@ const client = {
     login: async (code, redirectingURL) => {
         logger.debug("RAS login attempt");
         const rasTokens = await getRASTokenBundle(code, redirectingURL);
-        logger.debug(`RAS tokens received: ${JSON.stringify(rasTokens)}`);
+        logger.debug(`RAS tokens received: `);
         const user = await rasUserInfo(rasTokens.access_token);
         logger.debug(`RAS userinfo received: ${JSON.stringify(user)}`);
         const isValid = await validateRASPassport(user?.passport_jwt_v11);
@@ -38,11 +38,11 @@ const client = {
 
     authenticated: async (tokens) => {
         try {
-            if (!tokens?.accessToken) {
+            if (!tokens?.access_token) {
                 logger.warn("RAS authentication check: no token bundle found");
                 return false;
             }
-            const user = await rasUserInfo(tokens.accessToken);
+            const user = await rasUserInfo(tokens.access_token);
             const isValid = await validateRASPassport(user?.passport_jwt_v11);
             return isValid;
         } catch (error) {
@@ -52,7 +52,14 @@ const client = {
         return false;
     },
 
-    logout: async(idToken) => {
+    logout: async(tokens) => {
+        // RAS session logout requires the ID token from the stored token bundle.
+        const idToken = typeof tokens === "string" ? tokens : tokens?.id_token;
+        if (!idToken) {
+            logger.warn("RAS logout skipped: no id_token found");
+            return false;
+        }
+
         return await rasLogout(idToken);
     }
 };

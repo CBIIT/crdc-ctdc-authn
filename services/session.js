@@ -6,24 +6,28 @@ const MySQLStore = require('express-mysql-session')(session);
 
 function createSession({ sessionSecret, session_timeout } = {}) {
     sessionSecret = sessionSecret || randomBytes(16).toString("hex");
-        const storeOptions = {
+        const poolOptions = {
             host: config.mysql_host,
             port: config.mysql_port,
             user: config.mysql_user,
             password: config.mysql_password,
-            database: config.mysql_database,
+            database: config.mysql_database
+        };
+
+        const storeOptions = {
+            ...poolOptions,
             checkExpirationInterval: 10 * 1000, // 10 seconds
             expiration: session_timeout
         };
 
-        const mysql2PromisePool = mysql.createPool(storeOptions);
+        const mysql2PromisePool = mysql.createPool(poolOptions);
 
     return session({
         secret: sessionSecret,
         // rolling: true,
         saveUninitialized: false,
         resave: true,
-                store: new MySQLStore(storeOptions, mysql2PromisePool)
+        store: new MySQLStore(storeOptions, mysql2PromisePool)
     });
 }
 

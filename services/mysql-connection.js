@@ -9,8 +9,6 @@ const connection = mysql.createPool({
     database: config.mysql_database,
     insecureAuth : false,
     connectTimeout: 60000, // 60 seconds
-    acquireTimeout: 60000, // 60 seconds
-    timeout: 60000, // 60 seconds
     waitForConnections: true
 });
 
