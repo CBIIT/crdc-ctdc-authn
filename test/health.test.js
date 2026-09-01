@@ -1,3 +1,7 @@
+jest.mock("../services/session", () => ({
+  createSession: jest.fn(() => (req, res, next) => next()),
+}));
+
 const app = require("../app");
 const config = require("../config");
 const request = require("supertest");
