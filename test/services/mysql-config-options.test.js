@@ -11,6 +11,13 @@ jest.mock('mysql2/promise', () => ({
   }))
 }));
 
+jest.mock('../../logger', () => ({
+  debug: jest.fn(),
+  error: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+}));
+
 const mockStoreCtor = jest.fn();
 const mockExpressMysqlSessionFactory = jest.fn(() => mockStoreCtor);
 
@@ -31,6 +38,20 @@ describe('MySQL pool option compatibility', () => {
     const poolOptions = mysql2.createPool.mock.calls[0][0];
     expect(poolOptions).not.toHaveProperty('acquireTimeout');
     expect(poolOptions).not.toHaveProperty('timeout');
+  });
+
+  test('session TTL returns zero once when session cookie is missing', () => {
+    const mysql2 = require('mysql2');
+    const { getTTL } = require('../../services/mysql-connection');
+    const pool = mysql2.createPool.mock.results[0].value;
+    const res = { json: jest.fn() };
+
+    getTTL({ cookies: {} }, res);
+
+    expect(res.json).toHaveBeenCalledTimes(1);
+    expect(res.json).toHaveBeenCalledWith({ ttl: 0 });
+    expect(pool.getConnection).not.toHaveBeenCalled();
+    expect(pool.query).not.toHaveBeenCalled();
   });
 
   test('services/mySQL/mySQL-operations does not pass removed pool options', () => {
