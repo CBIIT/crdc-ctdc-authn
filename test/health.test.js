@@ -1,3 +1,11 @@
+// Prevent app.js from initializing a real MySQL-backed session store during
+// tests. Without a live MySQL server, express-mysql-session's connection
+// failure surfaces as an unhandled promise rejection that crashes the Jest
+// worker (see test/auth.test.js for the same mocking pattern).
+jest.mock("../services/session", () => ({
+  createSession: jest.fn(() => (req, res, next) => next())
+}));
+
 const app = require("../app");
 const config = require("../config");
 const request = require("supertest");
