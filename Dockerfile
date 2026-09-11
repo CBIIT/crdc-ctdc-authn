@@ -3,6 +3,9 @@ ENV PORT=8082
 ENV NODE_ENV=production
 WORKDIR /usr/src/app
 
+# Upgrade OpenSSL runtime libraries to patched Alpine packages.
+RUN apk upgrade --no-cache libcrypto3 libssl3
+
 COPY package.json ./
 # Install production dependencies, then remove npm from the immutable runtime
 RUN npm install --omit=dev --ignore-scripts \

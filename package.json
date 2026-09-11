@@ -28,7 +28,7 @@
     "jwa": "^1.4.1",
     "morgan": "^1.11.0",
     "mysql": "^2.18.1",
-    "mysql2": "^3.11.3",
+    "mysql2": "^3.22.0",
     "neo4j-driver": "^5.5.0",
     "node-fetch": "^2.6.9",
     "nodemailer": "^9.0.3",
@@ -47,7 +47,8 @@
     "ip-address": "^10.3.1",
     "body-parser": "1.20.6",
     "form-data": "4.0.6",
-    "qs": "^6.15.2"
+    "qs": "^6.15.2",
+    "mysql2": "$mysql2"
   },
   "comments": {
     "overrides": "Security fixes for transitive dependencies",
@@ -57,6 +58,7 @@
     "body-parser": "CVE-2026-12590 - invalid limits can disable request-size enforcement. Fixed in v1.20.6+",
     "form-data": "CVE-2026-12143 - multipart field and filename CRLF injection. Fixed in v4.0.6+",
     "qs": "CVE-2026-8723 - comma-array stringify denial of service. Fixed in v6.15.2+",
-    "morgan": "CVE-2026-5078 - remote-user log forging. Fixed in v1.11.0+"
+    "morgan": "CVE-2026-5078 - remote-user log forging. Fixed in v1.11.0+",
+    "mysql2": "GHSA-3f6p-5ww8-9rcr (HIGH) - auth plugin downgrade can expose plaintext credentials. Fixed in v3.22.0+"
   }
 }

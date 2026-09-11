@@ -1,3 +1,4 @@
+
 const request = require("supertest");
 
 jest.mock('../services/session', () => ({
@@ -8,6 +9,7 @@ jest.mock('../services/mysql-connection', () => ({
   getTTL: jest.fn(),
   getPing: jest.fn(),
   getVersion: jest.fn()
+
 }));
 
 const app = require("../app");
