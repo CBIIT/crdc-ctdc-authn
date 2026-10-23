@@ -61,6 +61,20 @@ const config = {
     PROMPT: process.env.DCF_PROMPT
   },
 
+  // RAS login settings
+  ras: {
+    CLIENT_ID: process.env.RAS_CLIENT_ID,
+    CLIENT_SECRET: process.env.RAS_CLIENT_SECRET,
+    BASE_URL: process.env.RAS_BASE_URL,
+    REDIRECT_URL: process.env.RAS_REDIRECT_URL,
+    USERINFO_URL: process.env.RAS_USERINFO_URL,
+    AUTHORIZE_URL: process.env.RAS_AUTHORIZE_URL,
+    TOKEN_URL: process.env.RAS_TOKEN_URL,
+    LOGOUT_URL: process.env.RAS_LOGOUT_URL,
+    VALIDATE_URL: process.env.RAS_VALIDATE_URL,
+    SCOPE: process.env.RAS_SCOPE
+  },
+
   database_type: process.env.DATABASE_TYPE,
   // Neo4j Connection
   neo4j_uri: process.env.NEO4J_URI,
@@ -84,6 +98,7 @@ const config = {
     // if (url) return url;
     if (!url && isCaseInsensitiveEqual(idp,'GOOGLE')) return process.env.GOOGLE_REDIRECT_URL;
     if (!url && isCaseInsensitiveEqual(idp,'NIH')) return process.env.NIH_REDIRECT_URL;
+    if (!url && isCaseInsensitiveEqual(idp,'RAS')) return process.env.RAS_REDIRECT_URL;
     return url;
   }
 };
